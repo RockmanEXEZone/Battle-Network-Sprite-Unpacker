@@ -6,186 +6,285 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
+using CommandLine;
+using CommandLine.Text;
+using System.Diagnostics;
 
 namespace BNSA_Unpacker
 {
+    //Command Line Options
+    class Options
+    {
+        //Operations
+        [Option('u', "unpack", MutuallyExclusiveSet = "operation", HelpText = "Unpacks the specified file. Can be used with -d to specify a specific destination folder.")]
+        public string UnpackFile { get; set; }
+
+        [Option('r', "repack", HelpText = "Repacks the specified BNSA project into a BNSA file.")]
+        public string OutputFolder { get; set; }
+
+        [Option('d', "destination", HelpText = "Output destination. Requires -u to function.")]
+        public string DestinationFolder { get; set; }
+
+        //Options
+        [Option('v', "verbose", HelpText = "Outputs verbose logging. Useful for debugging.")]
+        public Boolean VerboseOutput { get; set; }
+
+
+        [ParserState]
+        public IParserState LastParserState { get; set; }
+
+        //Help Text Builder
+        [HelpOption]
+        public string GetUsage()
+        {
+            return HelpText.AutoBuild(this,
+              (HelpText current) => HelpText.DefaultParsingErrorsHandler(this, current));
+        }
+    }
+
     class Program
     {
         static List<int> usedPalettes = new List<int>();
-
+        private static Boolean writeVerboseOutput = false;
         static void Main(string[] args)
         {
-            if (args.Length != 2)
+            //Command 
+            var options = new Options();
+            CommandLine.Parser parser = new CommandLine.Parser(s =>
             {
-                Console.WriteLine("A tool to unpack Battle Network Sprite Archive (BNSA) files.");
-                Console.WriteLine("bnsa-unpacker -e [path to bnsa]");
+                s.MutuallyExclusive = true;
+                s.CaseSensitive = false;
+                s.HelpWriter = Console.Out;
+            });
 
-            }
-            else
+            if (parser.ParseArguments(args, options))
             {
-
-                string command = args[0];
-                string path = args[1];
-
-                if (command == "-e")
+                if (options.VerboseOutput)
                 {
-                    byte[] inputFileBytes = File.ReadAllBytes(path);
-                    int currentOffset = 4;
-
-                    List<byte[]> archiveParts = new List<byte[]>();
-
-                    //Animation pointers
-                    int animPointersLength = inputFileBytes[3] * 4;
-                    byte[] animPointers = new byte[animPointersLength];
-                    Array.Copy(inputFileBytes, currentOffset, animPointers, 0, animPointersLength);
-                    currentOffset += animPointersLength;
-
-                    //Frame data
-                    int frameDataLength = findFrameDataEnd(inputFileBytes, currentOffset) - currentOffset;
-                    byte[] frameData = new byte[frameDataLength];
-                    Array.Copy(inputFileBytes, currentOffset, frameData, 0, frameDataLength);
-                    currentOffset += frameDataLength;
-
-                    //Tileset data
-                    int tilesetDataLength = findTilesetDataEnd(inputFileBytes, currentOffset) - currentOffset;
-                    byte[] tilesetData = new byte[tilesetDataLength];
-                    Array.Copy(inputFileBytes, currentOffset, tilesetData, 0, tilesetDataLength);
-                    List<int> tilesetOffsetList = getTilesetOffsetList(tilesetData, currentOffset - 4);
-                    List<byte[]> tilesetsList = splitTilesets(tilesetData);
-                    currentOffset += tilesetDataLength;
-
-                    //Palette data
-                    int paletteDataLength = findPaletteDataEnd(inputFileBytes, currentOffset) - currentOffset;
-                    byte[] paletteData = new byte[paletteDataLength];
-                    Array.Copy(inputFileBytes, currentOffset, paletteData, 0, paletteDataLength);
-                    List<int> paletteOffsetList = getPaletteOffsetList(paletteData, currentOffset + 4);
-                    List<byte[]> paletteList = splitPalettes(paletteData);
-                    currentOffset += paletteDataLength;
-
-                    //Mini-Animations data
-                    int miniAnimDataLength = findMiniAnimDataEnd(inputFileBytes, currentOffset) - currentOffset;
-                    byte[] miniAnimData = new byte[miniAnimDataLength];
-                    Array.Copy(inputFileBytes, currentOffset, miniAnimData, 0, miniAnimDataLength);
-                    List<int> miniAnimDataOffsetList = getMiniAnimOffsetList(miniAnimData, currentOffset);
-                    List<byte[]> miniAnimsList = splitMiniAnims(miniAnimData);
-                    currentOffset += miniAnimDataLength;
-
-                    //Object list data
-                    int objectListDataLength = findObjectListDataEnd(inputFileBytes, currentOffset) - currentOffset;
-                    byte[] objectListData = new byte[objectListDataLength];
-                    Array.Copy(inputFileBytes, currentOffset, objectListData, 0, objectListDataLength);
-                    List<int> objectListOffsetList = getObjectListOffsetList(objectListData, currentOffset);
-                    List<byte[]> objectListsList = splitObjectLists(objectListData);
-                    currentOffset += objectListDataLength;
-
-
-
-
-                    //XML document for animation frames format
-                    //XmlDocument frameDoc = new XmlDocument();
-                    //XmlNode animNode = frameDoc.CreateElement("animation");
-                    //frameDoc.AppendChild(animNode);
-
-                    //XmlNode frameNode = frameDoc.CreateElement("frame");
-                    //XmlAttribute tilesetAttr = frameDoc.CreateAttribute("tileset");
-                    //tilesetAttr.Value = tilesetsList[0].ToString();
-                    //frameNode.Attributes.Append(tilesetAttr);
-                    //animNode.AppendChild(frameNode);
-
-                    //frameDoc.Save()
-
-
-
-
-                    //Add arrays to list for export
-                    archiveParts.Add(animPointers);
-                    archiveParts.Add(frameData);
-                    archiveParts.Add(tilesetData);
-                    archiveParts.Add(paletteData);
-                    archiveParts.Add(miniAnimData);
-                    archiveParts.Add(objectListData);
-
-                    //create directories and save
-                    string unpackedPath = Path.GetDirectoryName(path) + "\\" + Path.GetFileNameWithoutExtension(path);
-                    string framesPath = unpackedPath + @"\\frames";
-                    string tilesetsPath = unpackedPath + @"\\tilesets";
-                    string palettesPath = unpackedPath + @"\\palettes";
-                    string miniAnimsPath = unpackedPath + @"\\minianims";
-                    string objectListsPath = unpackedPath + @"\\objectlists";
-
-                    Directory.CreateDirectory(unpackedPath);
-                    Directory.CreateDirectory(framesPath);
-                    Directory.CreateDirectory(tilesetsPath);
-                    Directory.CreateDirectory(palettesPath);
-                    Directory.CreateDirectory(miniAnimsPath);
-                    Directory.CreateDirectory(objectListsPath);
-
-                    //raw parts export
-                    File.WriteAllBytes(framesPath + "\\frames.bin", archiveParts[1].ToArray());
-                    File.WriteAllBytes(tilesetsPath + "\\tilesets.bin", archiveParts[2].ToArray());
-                    File.WriteAllBytes(palettesPath + "\\palettes.bin", archiveParts[3].ToArray());
-                    File.WriteAllBytes(miniAnimsPath + "\\minianims.bin", archiveParts[4].ToArray());
-                    File.WriteAllBytes(objectListsPath + "\\objectlists.bin", archiveParts[5].ToArray());
-
-
-                    //export tiles
-                    for (int i = 0; i < tilesetsList.Count; i++)
+                    writeVerboseOutput = true;
+                    writeVerboseMessage("Verbose mode turned on.");
+                }
+                //Unpack
+                if (options.UnpackFile != null)
+                {
+                    if (!File.Exists(options.UnpackFile))
                     {
-                        File.WriteAllBytes(tilesetsPath + "\\tiles" + i + ".bin", tilesetsList[i]);
+                        endProgram(options.UnpackFile + " does not exist or could not be accessed.", 1);
                     }
 
-                    //export palettes
-                    for (int i = 0; i < paletteList.Count; i++)
+                    string outputFolder = Directory.GetParent(options.UnpackFile).FullName;
+                    outputFolder += @"\" + Path.GetFileNameWithoutExtension(options.UnpackFile);
+                    //User Override
+                    if (options.DestinationFolder != null)
                     {
-                        File.WriteAllBytes(palettesPath + "\\palette" + i + ".bin", paletteList[i]);
+                        outputFolder = options.DestinationFolder;
                     }
 
-                    //export minianims
-                    for (int i = 0; i < miniAnimsList.Count; i++)
-                    {
-                        File.WriteAllBytes(miniAnimsPath + "\\minianim" + i + ".bin", miniAnimsList[i]);
-                    }
-
-                    //export objectlists
-                    for (int i = 0; i < objectListsList.Count; i++)
-                    {
-                        File.WriteAllBytes(objectListsPath + "\\objectlists" + i + ".bin", objectListsList[i]);
-                    }
-
-
-
-                    using (XmlWriter writer = XmlWriter.Create(framesPath + "\\animations.xml"))
-                    {
-                        writer.WriteStartDocument();
-                        writer.WriteStartElement("animation");
-
-                        for (int i = 0; i < frameData.Count(); i++)
-                        {
-                            writer.WriteStartElement("frame" + i.ToString());
-                            //writer.WriteElementString("tileset", getMatchingTileset(frameData, tilesetOffsetList, i));
-                            writer.WriteElementString("tileset", "tileset0.bin");
-                            writer.WriteElementString("palette", "palette0.bin");
-                            writer.WriteElementString("minianim", "minianim0.bin");
-                            writer.WriteElementString("objectlist", "objectlist0.bin");
-                            writer.WriteElementString("delay", 1.ToString());
-                            writer.WriteElementString("flags", "loop");
-
-                            writer.WriteEndElement();
-                        }
-                        writer.WriteEndElement();
-                        writer.WriteEndDocument();
-                    }
-
-
-
-
-
-
-                    //frameDoc.Save(framesPath + "\\animations.xml");
-
-                    Console.WriteLine("Sprite unpacked into " + unpackedPath);
+                    unpackBNSA(options.UnpackFile, outputFolder);
                 }
             }
+
+            //    if (args.Length != 2)
+            //{
+            //    Console.WriteLine("A tool to unpack Battle Network Sprite Archive (BNSA) files.");
+            //    Console.WriteLine("bnsa-unpacker -e [path to bnsa]");
+            //    Console.WriteLine("bnsa-unpacker -e [path to bnsa]");
+
+            //    Environment.Exit(1); //Return error code 1
+            //}
+            endProgram("No valid operations specified",1);
+        }
+
+        /// <summary>
+        /// Unpacks a BNSA file into parts.
+        /// </summary>
+        /// <param name="bnsaFile">Path to a BNSA file</param>
+        /// <param name="outputFolder">Directory to output files to. Will be created if it does not exist.</param>
+        private static void unpackBNSA(string bnsaFile, string outputFolder)
+        {
+            //TODO: Check if archive is compressed. Likely will not be, but you never know. Can be identified by first 4 bytes.
+            writeVerboseMessage("Unpacking "+bnsaFile+" to "+outputFolder);
+            //Extract/Unpack
+            byte[] inputFileBytes = File.ReadAllBytes(bnsaFile);
+            int currentOffset = 4;
+
+            List<byte[]> archiveParts = new List<byte[]>();
+
+            //Animation pointers
+            writeVerboseMessage("Reading Animation Pointers");
+            int animPointersLength = inputFileBytes[3] * 4;
+            byte[] animPointers = new byte[animPointersLength];
+            Array.Copy(inputFileBytes, currentOffset, animPointers, 0, animPointersLength);
+            currentOffset += animPointersLength;
+
+            //Frame data
+            writeVerboseMessage("Calculating Frames data");
+            int frameDataLength = findFrameDataEnd(inputFileBytes, currentOffset) - currentOffset;
+            byte[] frameData = new byte[frameDataLength];
+            Array.Copy(inputFileBytes, currentOffset, frameData, 0, frameDataLength);
+            currentOffset += frameDataLength;
+
+            //Tileset data
+            writeVerboseMessage("Calculating Tilesets data");
+            int tilesetDataLength = findTilesetDataEnd(inputFileBytes, currentOffset) - currentOffset;
+            byte[] tilesetData = new byte[tilesetDataLength];
+            Array.Copy(inputFileBytes, currentOffset, tilesetData, 0, tilesetDataLength);
+            List<int> tilesetOffsetList = getTilesetOffsetList(tilesetData, currentOffset - 4);
+            List<byte[]> tilesetsList = splitTilesets(tilesetData);
+            currentOffset += tilesetDataLength;
+
+            //Palette data
+            writeVerboseMessage("Calculating Palettes data");
+            int paletteDataLength = findPaletteDataEnd(inputFileBytes, currentOffset) - currentOffset;
+            byte[] paletteData = new byte[paletteDataLength];
+            Array.Copy(inputFileBytes, currentOffset, paletteData, 0, paletteDataLength);
+            List<int> paletteOffsetList = getPaletteOffsetList(paletteData, currentOffset + 4);
+            List<byte[]> paletteList = splitPalettes(paletteData);
+            currentOffset += paletteDataLength;
+
+            //Mini-Animations data
+            writeVerboseMessage("Calculating Mini Animations data");
+            int miniAnimDataLength = findMiniAnimDataEnd(inputFileBytes, currentOffset) - currentOffset;
+            byte[] miniAnimData = new byte[miniAnimDataLength];
+            Array.Copy(inputFileBytes, currentOffset, miniAnimData, 0, miniAnimDataLength);
+            List<int> miniAnimDataOffsetList = getMiniAnimOffsetList(miniAnimData, currentOffset);
+            List<byte[]> miniAnimsList = splitMiniAnims(miniAnimData);
+            currentOffset += miniAnimDataLength;
+
+            //Object list data
+            writeVerboseMessage("Calculating Objects Lists data");
+            int objectListDataLength = findObjectListDataEnd(inputFileBytes, currentOffset) - currentOffset;
+            byte[] objectListData = new byte[objectListDataLength];
+            Array.Copy(inputFileBytes, currentOffset, objectListData, 0, objectListDataLength);
+            List<int> objectListOffsetList = getObjectListOffsetList(objectListData, currentOffset);
+            List<byte[]> objectListsList = splitObjectLists(objectListData);
+            currentOffset += objectListDataLength;
+
+
+
+
+            //XML document for animation frames format
+            //XmlDocument frameDoc = new XmlDocument();
+            //XmlNode animNode = frameDoc.CreateElement("animation");
+            //frameDoc.AppendChild(animNode);
+
+            //XmlNode frameNode = frameDoc.CreateElement("frame");
+            //XmlAttribute tilesetAttr = frameDoc.CreateAttribute("tileset");
+            //tilesetAttr.Value = tilesetsList[0].ToString();
+            //frameNode.Attributes.Append(tilesetAttr);
+            //animNode.AppendChild(frameNode);
+
+            //frameDoc.Save()
+
+
+
+
+            //Add arrays to list for export
+            archiveParts.Add(animPointers);
+            archiveParts.Add(frameData);
+            archiveParts.Add(tilesetData);
+            archiveParts.Add(paletteData);
+            archiveParts.Add(miniAnimData);
+            archiveParts.Add(objectListData);
+
+            //create directories and save
+            writeVerboseMessage("Creating output directories");
+            string framesPath = outputFolder + @"\\frames";
+            string tilesetsPath = outputFolder + @"\\tilesets";
+            string palettesPath = outputFolder + @"\\palettes";
+            string miniAnimsPath = outputFolder + @"\\minianims";
+            string objectListsPath = outputFolder + @"\\objectlists";
+
+            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(framesPath);
+            Directory.CreateDirectory(tilesetsPath);
+            Directory.CreateDirectory(palettesPath);
+            Directory.CreateDirectory(miniAnimsPath);
+            Directory.CreateDirectory(objectListsPath);
+
+            //raw parts export
+            writeVerboseMessage("Extracting raw parts");
+            File.WriteAllBytes(framesPath + "\\frames.bin", archiveParts[1].ToArray());
+            File.WriteAllBytes(tilesetsPath + "\\tilesets.bin", archiveParts[2].ToArray());
+            File.WriteAllBytes(palettesPath + "\\palettes.bin", archiveParts[3].ToArray());
+            File.WriteAllBytes(miniAnimsPath + "\\minianims.bin", archiveParts[4].ToArray());
+            File.WriteAllBytes(objectListsPath + "\\objectlists.bin", archiveParts[5].ToArray());
+
+
+            //export tiles
+            for (int i = 0; i < tilesetsList.Count; i++)
+            {
+                writeVerboseMessage("Extracting Tileset "+i);
+                File.WriteAllBytes(tilesetsPath + "\\tiles" + i + ".bin", tilesetsList[i]);
+            }
+
+            //export palettes
+            for (int i = 0; i < paletteList.Count; i++)
+            {
+                writeVerboseMessage("Extracting Palette "+i);
+                File.WriteAllBytes(palettesPath + "\\palette" + i + ".bin", paletteList[i]);
+            }
+
+            //export minianims
+            for (int i = 0; i < miniAnimsList.Count; i++)
+            {
+                writeVerboseMessage("Extracting Mini Animation " + i);
+                    File.WriteAllBytes(miniAnimsPath + "\\minianim" + i + ".bin", miniAnimsList[i]);
+            }
+
+            //export objectlists
+            for (int i = 0; i < objectListsList.Count; i++)
+            {
+                writeVerboseMessage("Extracting Object List " + i);
+                File.WriteAllBytes(objectListsPath + "\\objectlists" + i + ".bin", objectListsList[i]);
+            }
+
+
+            writeVerboseMessage("Creating BNSA Project file...");
+
+            using (XmlWriter writer = XmlWriter.Create(framesPath + "\\animations.xml"))
+            {
+                writer.WriteStartDocument();
+                writer.WriteStartElement("animation");
+
+                for (int i = 0; i < frameData.Count(); i++)
+                {
+                    writer.WriteStartElement("frame" + i.ToString());
+                    //writer.WriteElementString("tileset", getMatchingTileset(frameData, tilesetOffsetList, i));
+                    writer.WriteElementString("tileset", "tileset0.bin");
+                    writer.WriteElementString("palette", "palette0.bin");
+                    writer.WriteElementString("minianim", "minianim0.bin");
+                    writer.WriteElementString("objectlist", "objectlist0.bin");
+                    writer.WriteElementString("delay", 1.ToString());
+                    writer.WriteElementString("flags", "loop");
+
+                    writer.WriteEndElement();
+                }
+                writer.WriteEndElement();
+                writer.WriteEndDocument();
+            }
+
+
+
+
+
+
+            //frameDoc.Save(framesPath + "\\animations.xml");
+
+            endProgram("Sprite unpacked into " + outputFolder,0);
+
+        }
+
+        /// <summary>
+        /// Exits the program, showing the message and exiting with the specified code
+        /// </summary>
+        /// <param name="message">Message to show</param>
+        /// <param name="code">Exit code</param>
+        private static void endProgram(string message, int code)
+        {
+            Console.Error.WriteLine(message);
+            pauseIfDebug();
+            Environment.Exit(code);
         }
 
         public static int findFrameDataEnd(byte[] archiveFile, int startOffset)
@@ -629,11 +728,11 @@ namespace BNSA_Unpacker
         }
 
 
-        public static string getMatchingTileset(byte[] frameData, List<int>tilesetsList, int i)
+        public static string getMatchingTileset(byte[] frameData, List<int> tilesetsList, int i)
         {
             string filename = "";
 
-            int currentTileset = BitConverter.ToInt32(frameData, i*5);
+            int currentTileset = BitConverter.ToInt32(frameData, i * 5);
             int fileIndex = 0;
 
             for (int k = 0; k < tilesetsList.Count; k++)
@@ -650,8 +749,17 @@ namespace BNSA_Unpacker
             return filename;
         }
 
-
-
+        /// <summary>
+        /// Writes a verbose message to the console if verbose option is turned on.
+        /// </summary>
+        /// <param name="message">Message to show if verbose is turned on</param>
+        private static void writeVerboseMessage(String message)
+        {
+            if (writeVerboseOutput)
+            {
+                Console.WriteLine(message);
+            }
+        }
 
 
         public static int roundUp4(int num)
@@ -667,5 +775,11 @@ namespace BNSA_Unpacker
             return num;
         }
 
+        [ConditionalAttribute("DEBUG")]
+        private static void pauseIfDebug()
+        {
+            Console.WriteLine("Press Enter to exit");
+            Console.ReadLine();
+        }
     }
 }
