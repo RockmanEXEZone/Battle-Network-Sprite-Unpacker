@@ -47,6 +47,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="classes\Animation.cs" />
+    <Compile Include="classes\BNSAFile.cs" />
+    <Compile Include="classes\Frame.cs" />
+    <Compile Include="classes\Palette.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

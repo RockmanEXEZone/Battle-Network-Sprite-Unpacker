@@ -10,6 +10,7 @@ using CommandLine;
 using CommandLine.Text;
 using System.Diagnostics;
 using System.Xml.Linq;
+using BNSA_Unpacker.classes;
 
 namespace BNSA_Unpacker
 {
@@ -103,6 +104,11 @@ namespace BNSA_Unpacker
         /// <param name="outputFolder">Directory to output files to. Will be created if it does not exist.</param>
         private static void unpackBNSA(string bnsaFile, string outputFolder)
         {
+            new BNSAFile(bnsaFile);
+            if (true)
+            {
+                endProgram("Testing done...",0);
+            }
             //TODO: Check if archive is compressed. Likely will not be, but you never know. Can be identified by first 4 bytes.
             writeVerboseMessage("Unpacking " + bnsaFile + " to " + outputFolder);
             //Extract/Unpack
