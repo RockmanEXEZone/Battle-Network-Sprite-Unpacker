@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using CommandLine;
 using CommandLine.Text;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace BNSA_Unpacker
 {
@@ -92,7 +93,7 @@ namespace BNSA_Unpacker
 
             //    Environment.Exit(1); //Return error code 1
             //}
-            endProgram("No valid operations specified",1);
+            endProgram("No valid operations specified", 1);
         }
 
         /// <summary>
@@ -103,7 +104,7 @@ namespace BNSA_Unpacker
         private static void unpackBNSA(string bnsaFile, string outputFolder)
         {
             //TODO: Check if archive is compressed. Likely will not be, but you never know. Can be identified by first 4 bytes.
-            writeVerboseMessage("Unpacking "+bnsaFile+" to "+outputFolder);
+            writeVerboseMessage("Unpacking " + bnsaFile + " to " + outputFolder);
             //Extract/Unpack
             byte[] inputFileBytes = File.ReadAllBytes(bnsaFile);
             int currentOffset = 4;
@@ -214,14 +215,14 @@ namespace BNSA_Unpacker
             //export tiles
             for (int i = 0; i < tilesetsList.Count; i++)
             {
-                writeVerboseMessage("Extracting Tileset "+i);
+                writeVerboseMessage("Extracting Tileset " + i);
                 File.WriteAllBytes(tilesetsPath + "\\tiles" + i + ".bin", tilesetsList[i]);
             }
 
             //export palettes
             for (int i = 0; i < paletteList.Count; i++)
             {
-                writeVerboseMessage("Extracting Palette "+i);
+                writeVerboseMessage("Extracting Palette " + i);
                 File.WriteAllBytes(palettesPath + "\\palette" + i + ".bin", paletteList[i]);
             }
 
@@ -229,7 +230,7 @@ namespace BNSA_Unpacker
             for (int i = 0; i < miniAnimsList.Count; i++)
             {
                 writeVerboseMessage("Extracting Mini Animation " + i);
-                    File.WriteAllBytes(miniAnimsPath + "\\minianim" + i + ".bin", miniAnimsList[i]);
+                File.WriteAllBytes(miniAnimsPath + "\\minianim" + i + ".bin", miniAnimsList[i]);
             }
 
             //export objectlists
@@ -242,7 +243,9 @@ namespace BNSA_Unpacker
 
             writeVerboseMessage("Creating BNSA Project file...");
 
-            using (XmlWriter writer = XmlWriter.Create(framesPath + "\\animations.xml"))
+            XmlWriterSettings settings = new XmlWriterSettings { Indent = true };
+
+            using (XmlWriter writer = XmlWriter.Create(framesPath + "\\animations.xml", settings))
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("animation");
@@ -265,13 +268,42 @@ namespace BNSA_Unpacker
             }
 
 
+            XDocument xDoc = new XDocument(new XDeclaration("1.0", "UTF-16", null));
+            for (int i = 0; i < frameData.Count(); i++)
+            {
+                //writer.WriteStartElement("frame" + i.ToString());
+                ////writer.WriteElementString("tileset", getMatchingTileset(frameData, tilesetOffsetList, i));
+                //writer.WriteElementString("tileset", "tileset0.bin");
+                //writer.WriteElementString("palette", "palette0.bin");
+                //writer.WriteElementString("minianim", "minianim0.bin");
+                //writer.WriteElementString("objectlist", "objectlist0.bin");
+                //writer.WriteElementString("delay", 1.ToString());
+                //writer.WriteElementString("flags", "loop");
+
+                //new XElement("Frame",
+                //    new XElement("tileset",
+                //        new XComment("Only 3 elements for demo purposes"),
+                //        new XElement("EmpId", "5"),
+                //        new XElement("Name", "Kimmy"),
+                //        new XElement("Sex", "Female"), 
+                //        new XAttribute("index", i);
+                //        )));
+        }
+
+            
+
+            StringWriter sw = new StringWriter();
+            xDoc.Save(sw);
+            Console.WriteLine(sw);
+
+
 
 
 
 
             //frameDoc.Save(framesPath + "\\animations.xml");
 
-            endProgram("Sprite unpacked into " + outputFolder,0);
+            endProgram("Sprite unpacked into " + outputFolder, 0);
 
         }
 
