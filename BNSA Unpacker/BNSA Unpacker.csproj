@@ -51,6 +51,7 @@
     <Compile Include="classes\BNSAFile.cs" />
     <Compile Include="classes\Frame.cs" />
     <Compile Include="classes\Palette.cs" />
+    <Compile Include="classes\Tileset.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
