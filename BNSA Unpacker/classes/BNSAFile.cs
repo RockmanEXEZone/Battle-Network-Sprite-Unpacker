@@ -17,6 +17,11 @@ namespace BNSA_Unpacker.classes
 
         public int AnimationCount = 0;
         public int LargestTileset = 0;
+
+        public List<Animation> Animations = new List<Animation>();
+        public List<Tileset> Tilesets = new List<Tileset>();
+        public List<Palette> Palettes = new List<Palette>();
+
         public Boolean ValidBNSA = false;
         public BNSAFile(string path)
         {
@@ -39,6 +44,7 @@ namespace BNSA_Unpacker.classes
                     int animationPointer = ReadIntegerFromStream(bnsaStream);
                     long nextPosition = bnsaStream.Position;
                     Animation animation = new Animation(this,animationPointer, bnsaStream);
+                    Animations.Add(animation);
                     if (i < AnimationCount - 1)
                     {
                         bnsaStream.Seek(nextPosition, SeekOrigin.Begin); //reset position to next pointer
@@ -52,16 +58,44 @@ namespace BNSA_Unpacker.classes
                 {
                     //Read Tilesets
                     Tileset ts = new Tileset(bnsaStream);
-
+                    Tilesets.Add(ts); //Might need some extra checking...
                 }
 
                 //Read Palettes
                 PaletteStartPointer = bnsaStream.Position;
-                Console.WriteLine("Reading Palettes, starting at 0x" + PaletteStartPointer.ToString("X6"));
+                Console.WriteLine("Found start of Palettes at 0x" + PaletteStartPointer.ToString("X6"));
+                if (ReadIntegerFromStream(bnsaStream) == 0x20)
+                {
+                    while (true)
+                    {
+                        long pos = bnsaStream.Position;
 
-                //Starts with byte 0x20. Each palette is 32+4 bytes.
+                        //Verify next item is a palette...
+                        if (ReadIntegerFromStream(bnsaStream) == 0x4 && bnsaStream.ReadByte() == 0x0 && bnsaStream.ReadByte() == 0x01 && bnsaStream.ReadByte() == 0x80)
+                        {
+                            bnsaStream.Seek(-0x7, SeekOrigin.Current);
+                            break; //Not a palette. This code needs to be improved to account for mugshots.
+                        }
+                        bnsaStream.Seek(pos, SeekOrigin.Begin);
+                        Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X6"));
+                        Palette palette = new Palette(bnsaStream);
+                        Palettes.Add(palette);
+                        //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X6"));
+
+                    }
+
+
+                    //Read Palette - Reading will move position back 4 so it reads the full palette and advance to the next size position.
+
+                }//} else
+                 //{
+                 //    Console.WriteLine("Palettes should start here, but we didn't find 0x00000020! (At position  0x" + PaletteStartPointer.ToString("X6") + ")");
+                 //    return;
+                 //}
 
                 //Read Mini-Animations and Object Lists
+                Console.WriteLine("Reading MiniAnim Data at " + bnsaStream.Position.ToString("X6"));
+
             }
         }
 
