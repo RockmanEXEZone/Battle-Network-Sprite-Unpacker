@@ -10,7 +10,11 @@ namespace BNSA_Unpacker.classes
     class BNSAFile
     {
         string filepath;
-        public byte[] Memory;
+
+        public long TilesetStartPointer;
+        public long PaletteStartPointer;
+        public long ProbablyPaletteStartPointer = long.MaxValue; //will always force min
+
         public int AnimationCount = 0;
         public int LargestTileset = 0;
         public Boolean ValidBNSA = false;
@@ -34,10 +38,30 @@ namespace BNSA_Unpacker.classes
                 {
                     int animationPointer = ReadIntegerFromStream(bnsaStream);
                     long nextPosition = bnsaStream.Position;
-                    Animation animation = new Animation(animationPointer, bnsaStream);
-                    bnsaStream.Seek(nextPosition, SeekOrigin.Begin); //reset position to next pointer
+                    Animation animation = new Animation(this,animationPointer, bnsaStream);
+                    if (i < AnimationCount - 1)
+                    {
+                        bnsaStream.Seek(nextPosition, SeekOrigin.Begin); //reset position to next pointer
+                    }
                 }
-                //
+
+                //Read Tilesets
+                TilesetStartPointer = bnsaStream.Position;
+                Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X6"));
+                while (bnsaStream.Position < ProbablyPaletteStartPointer)
+                {
+                    //Read Tilesets
+                    Tileset ts = new Tileset(bnsaStream);
+
+                }
+
+                //Read Palettes
+                PaletteStartPointer = bnsaStream.Position;
+                Console.WriteLine("Reading Palettes, starting at 0x" + PaletteStartPointer.ToString("X6"));
+
+                //Starts with byte 0x20. Each palette is 32+4 bytes.
+
+                //Read Mini-Animations and Object Lists
             }
         }
 
@@ -52,5 +76,28 @@ namespace BNSA_Unpacker.classes
             stream.Read(pointer, 0, 4);
             return BitConverter.ToInt32(pointer, 0);
         }
+
+        //public int findTilesetDataEnd(FileStream stream)
+        //{
+        //    while (true)
+        //    {
+        //        if (verifyValidTilesetSize(archiveFile, position) == true)
+        //        {
+        //            int size = BitConverter.ToInt32(archiveFile, position);
+        //            position += size + 4;
+        //            //if (size == 0x20)
+        //            //{
+        //            //    endOffset = position;
+        //            //}
+        //        }
+        //        else
+        //        {
+        //            endOffset = position;
+        //        }
+
+        //    }
+
+        //    return endOffset;
+        //}
     }
 }

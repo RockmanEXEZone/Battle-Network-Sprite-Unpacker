@@ -24,10 +24,10 @@ namespace BNSA_Unpacker.classes
         /// <param name="stream">Stream to read a frame from</param>
         public Frame(FileStream stream)
         {
-            TilesetPointer = BNSAFile.ReadIntegerFromStream(stream);
-            PalettePointer = BNSAFile.ReadIntegerFromStream(stream);
-            MiniAnimationPointer = BNSAFile.ReadIntegerFromStream(stream);
-            ObjectListPointer = BNSAFile.ReadIntegerFromStream(stream);
+            TilesetPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
+            PalettePointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
+            MiniAnimationPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
+            ObjectListPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
             FrameDelay = (byte) stream.ReadByte();
             stream.ReadByte(); //constant 00?
             Flags = (byte)stream.ReadByte();
