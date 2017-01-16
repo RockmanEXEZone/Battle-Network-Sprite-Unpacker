@@ -104,7 +104,8 @@ namespace BNSA_Unpacker
         /// <param name="outputFolder">Directory to output files to. Will be created if it does not exist.</param>
         private static void unpackBNSA(string bnsaFile, string outputFolder)
         {
-            new BNSAFile(bnsaFile);
+            BNSAFile bnsa = new BNSAFile(bnsaFile);
+            bnsa.resolveReferences();
             if (true)
             {
                 endProgram("Testing done...",0);

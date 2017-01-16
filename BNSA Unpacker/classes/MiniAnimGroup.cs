@@ -19,13 +19,13 @@ namespace BNSA_Unpacker.classes
         public MiniAnimGroup(FileStream stream)
         {
             Pointer = stream.Position;
-            int FirstAnimPointer = int.MaxValue;
-            while (stream.Position < FirstAnimPointer + Pointer)
+            int firstAnimPointer = int.MaxValue;
+            while (stream.Position < firstAnimPointer + Pointer)
             {
                 int animationPointer = BNSAFile.ReadIntegerFromStream(stream);
-                FirstAnimPointer = Math.Min(FirstAnimPointer, animationPointer); //should only be triggered by the first pointer as it goes ascending.
-
+                firstAnimPointer = Math.Min(firstAnimPointer, animationPointer); //should only be triggered by the first pointer as it goes ascending.
                 long nextPosition = stream.Position;
+                stream.Seek(Pointer + animationPointer, SeekOrigin.Begin); //Move cursor to start of minianim
                 MiniAnim animation = new MiniAnim(stream, Pointer);
                 IsValid &= animation.IsValid;
                 if (!IsValid)
@@ -34,7 +34,7 @@ namespace BNSA_Unpacker.classes
                 }
 
                 MiniAnimations.Add(animation);
-                if (nextPosition < FirstAnimPointer + Pointer)
+                if (nextPosition < firstAnimPointer + Pointer)
                 {
                     //Read the next 4 bytes in the pointer table as its a new pointer
                     stream.Seek(nextPosition, SeekOrigin.Begin);

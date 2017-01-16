@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BNSA_Unpacker.classes
 {
-    class ObjectListEntry
+    class OAMDataListEntry
     {
 
         public byte TileNumber;
@@ -25,7 +25,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs a mini-frame object, part of a mini-animation.
         /// </summary>
         /// <param name="stream">Stream to construct a miniframe from</param>
-        public ObjectListEntry(FileStream stream)
+        public OAMDataListEntry(FileStream stream)
         {
             Console.Write("------Reading Object List Entry at 0x" + stream.Position.ToString("X2"));
 

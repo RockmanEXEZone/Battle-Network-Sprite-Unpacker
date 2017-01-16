@@ -9,8 +9,6 @@ namespace BNSA_Unpacker.classes
 {
     class BNSAFile
     {
-        string filepath;
-
         public long TilesetStartPointer;
         public long PaletteStartPointer;
         public long ProbablyPaletteStartPointer = long.MaxValue; //will always force min
@@ -22,7 +20,7 @@ namespace BNSA_Unpacker.classes
         public List<Tileset> Tilesets = new List<Tileset>();
         public List<Palette> Palettes = new List<Palette>();
         public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
-        public List<ObjectListGroup> ObjectListGroups = new List<ObjectListGroup>();
+        public List<OAMDataListGroup> ObjectListGroups = new List<OAMDataListGroup>();
 
         public Boolean ValidBNSA = false;
         public BNSAFile(string path)
@@ -72,11 +70,44 @@ namespace BNSA_Unpacker.classes
                     {
                         long pos = bnsaStream.Position;
 
-                        //Verify next item is a palette...
-                        if (ReadIntegerFromStream(bnsaStream) == 0x4 && bnsaStream.ReadByte() == 0x0 && bnsaStream.ReadByte() == 0x01 && bnsaStream.ReadByte() == 0x80)
+                        //Verify next item is a palette and not a minianim
+                        int minianimCheckPtr1 = ReadIntegerFromStream(bnsaStream);
+                        if (minianimCheckPtr1 % 4 == 0)
                         {
-                            bnsaStream.Seek(-0x7, SeekOrigin.Current);
-                            break; //Not a palette. This code needs to be improved to account for mugshots.
+                            //All pointers in the minianim table are lined up on a 4-byte boundary.
+                            //Indexing starts at 0. Each pointer is 4 bytes, so the first one will have to point to a 4-point value
+
+                            //could be an pointer to 1-frame minianim, maybe... 
+                            if (minianimCheckPtr1 == 4)
+                            {
+                                //Check for 1 pointer minianim signature
+                                if (bnsaStream.ReadByte() == 0x0 && bnsaStream.ReadByte() == 0x01 && bnsaStream.ReadByte() == 0x80)
+                                {
+                                    bnsaStream.Seek(pos, SeekOrigin.Begin);
+                                    break; //Not a palette. Next Item is a single-frame minianim group. End of Palette Block
+                                }
+                            }
+
+                            //Could be a multi-miniframe mugshot, let's check the amount of pointers and the values.
+                            int numberOfMiniAnimsInGroup = minianimCheckPtr1 / 4; //Pointer will go to first value after pointer table, so divide by num bytes in a pointer
+                            int previousPointerToCheckAgainst = minianimCheckPtr1;
+                            Boolean validMiniAnimPointerData = true;
+                            for (int i = 1; i < numberOfMiniAnimsInGroup; i++)
+                            {
+                                int nextMiniAnimCheckPtr = ReadIntegerFromStream(bnsaStream);
+                                if (nextMiniAnimCheckPtr < previousPointerToCheckAgainst)
+                                {
+                                    validMiniAnimPointerData = false;
+                                    break;
+                                }
+                            }
+                            if (validMiniAnimPointerData)
+                            {
+                                //Probably a minianim
+                                bnsaStream.Seek(pos, SeekOrigin.Begin);
+                                break;
+                            }
+
                         }
                         bnsaStream.Seek(pos, SeekOrigin.Begin);
                         Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X2"));
@@ -119,7 +150,7 @@ namespace BNSA_Unpacker.classes
                 {
                     //Validate next data is a mini animation.
                     //long listPosition = bnsaStream.Position;
-                    ObjectListGroup group = new ObjectListGroup(bnsaStream);
+                    OAMDataListGroup group = new OAMDataListGroup(bnsaStream);
                     //if (!group.IsValid)
                     //{
                     //    //End of Mini-Anims
@@ -128,10 +159,13 @@ namespace BNSA_Unpacker.classes
                     //}
                     ObjectListGroups.Add(group);
                     //Round up to the next 4 byte boundary
-                    bnsaStream.ReadByte(); //pos++
-                    while (bnsaStream.Position % 4 != 0)
+                    if (bnsaStream.Position < bnsaStream.Length) //Might end on a 4byte boundary already.
                     {
-                        bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
+                        bnsaStream.ReadByte(); //pos++
+                        while (bnsaStream.Position % 4 != 0)
+                        {
+                            bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
+                        }
                     }
                 }
                 Console.WriteLine("...Reached end of the file.");
@@ -148,6 +182,21 @@ namespace BNSA_Unpacker.classes
             byte[] pointer = new byte[4]; //32-bit pointer
             stream.Read(pointer, 0, 4);
             return BitConverter.ToInt32(pointer, 0);
+        }
+
+        /// <summary>
+        /// Changes pointers and indexes to use object references. Essentially builds the links in code that are done in the binary BNSA file.
+        /// This method should be called after a BNSA file is parsed, but before writing the XML as the references are not yet established
+        /// </summary>
+        public void resolveReferences()
+        {
+            int i = 0;
+            foreach (Animation animation in Animations)
+            {
+                Console.WriteLine("Resolving References in Animation " + i);
+                animation.ResolveReferences(this);
+                i++;
+            }
         }
 
         //public int findTilesetDataEnd(FileStream stream)

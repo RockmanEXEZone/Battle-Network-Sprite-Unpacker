@@ -53,9 +53,9 @@
     <Compile Include="classes\MiniAnim.cs" />
     <Compile Include="classes\MiniAnimGroup.cs" />
     <Compile Include="classes\MiniFrame.cs" />
-    <Compile Include="classes\ObjectList.cs" />
-    <Compile Include="classes\ObjectListEntry.cs" />
-    <Compile Include="classes\ObjectListGroup.cs" />
+    <Compile Include="classes\OAMDataList.cs" />
+    <Compile Include="classes\OAMDataListEntry.cs" />
+    <Compile Include="classes\OAMDataListGroup.cs" />
     <Compile Include="classes\Palette.cs" />
     <Compile Include="classes\Tileset.cs" />
     <Compile Include="Program.cs" />
