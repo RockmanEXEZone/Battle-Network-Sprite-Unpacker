@@ -16,7 +16,7 @@ namespace BNSA_Unpacker.classes
         public Tileset(FileStream stream)
         {
             Pointer = stream.Position;
-            Console.WriteLine("Reading Tileset at 0x" + Pointer.ToString("X6"));
+            Console.WriteLine("Reading Tileset at 0x" + Pointer.ToString("X2"));
             BitmapSize = BNSAFile.ReadIntegerFromStream(stream);
             BitmapData = new byte[BitmapSize];
             stream.Read(BitmapData, 0, BitmapSize);

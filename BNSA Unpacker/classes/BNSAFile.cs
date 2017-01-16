@@ -21,6 +21,8 @@ namespace BNSA_Unpacker.classes
         public List<Animation> Animations = new List<Animation>();
         public List<Tileset> Tilesets = new List<Tileset>();
         public List<Palette> Palettes = new List<Palette>();
+        public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
+        public List<ObjectListGroup> ObjectListGroups = new List<ObjectListGroup>();
 
         public Boolean ValidBNSA = false;
         public BNSAFile(string path)
@@ -43,7 +45,7 @@ namespace BNSA_Unpacker.classes
                 {
                     int animationPointer = ReadIntegerFromStream(bnsaStream);
                     long nextPosition = bnsaStream.Position;
-                    Animation animation = new Animation(this,animationPointer, bnsaStream);
+                    Animation animation = new Animation(this, animationPointer, bnsaStream);
                     Animations.Add(animation);
                     if (i < AnimationCount - 1)
                     {
@@ -53,7 +55,7 @@ namespace BNSA_Unpacker.classes
 
                 //Read Tilesets
                 TilesetStartPointer = bnsaStream.Position;
-                Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X6"));
+                Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X2"));
                 while (bnsaStream.Position < ProbablyPaletteStartPointer)
                 {
                     //Read Tilesets
@@ -63,7 +65,7 @@ namespace BNSA_Unpacker.classes
 
                 //Read Palettes
                 PaletteStartPointer = bnsaStream.Position;
-                Console.WriteLine("Found start of Palettes at 0x" + PaletteStartPointer.ToString("X6"));
+                Console.WriteLine("Found start of Palettes at 0x" + PaletteStartPointer.ToString("X2"));
                 if (ReadIntegerFromStream(bnsaStream) == 0x20)
                 {
                     while (true)
@@ -77,25 +79,62 @@ namespace BNSA_Unpacker.classes
                             break; //Not a palette. This code needs to be improved to account for mugshots.
                         }
                         bnsaStream.Seek(pos, SeekOrigin.Begin);
-                        Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X6"));
+                        Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X2"));
                         Palette palette = new Palette(bnsaStream);
                         Palettes.Add(palette);
-                        //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X6"));
+                        //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X2"));
 
                     }
-
-
-                    //Read Palette - Reading will move position back 4 so it reads the full palette and advance to the next size position.
-
                 }//} else
                  //{
-                 //    Console.WriteLine("Palettes should start here, but we didn't find 0x00000020! (At position  0x" + PaletteStartPointer.ToString("X6") + ")");
+                 //    Console.WriteLine("Palettes should start here, but we didn't find 0x00000020! (At position  0x" + PaletteStartPointer.ToString("X2") + ")");
                  //    return;
                  //}
 
-                //Read Mini-Animations and Object Lists
-                Console.WriteLine("Reading MiniAnim Data at " + bnsaStream.Position.ToString("X6"));
+                //Read Mini-Animations
+                Console.WriteLine("Reading MiniAnim Data at 0x" + bnsaStream.Position.ToString("X2"));
+                while (true)
+                {
+                    //Validate next data is a mini animation.
+                    long groupStartPos = bnsaStream.Position;
+                    MiniAnimGroup group = new MiniAnimGroup(bnsaStream);
+                    if (!group.IsValid)
+                    {
+                        //End of Mini-Anims
+                        bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
+                        break;
+                    }
+                    MiniAnimGroups.Add(group);
+                    //Round up to the next 4 byte boundary
+                    bnsaStream.ReadByte(); //pos++
+                    while (bnsaStream.Position % 4 != 0)
+                    {
+                        bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
+                    }
+                }
 
+                //Read Object Lists
+                Console.WriteLine("Reading Object Lists data at 0x" + bnsaStream.Position.ToString("X2"));
+                while (bnsaStream.Position < bnsaStream.Length)
+                {
+                    //Validate next data is a mini animation.
+                    //long listPosition = bnsaStream.Position;
+                    ObjectListGroup group = new ObjectListGroup(bnsaStream);
+                    //if (!group.IsValid)
+                    //{
+                    //    //End of Mini-Anims
+                    //    bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
+                    //    break;
+                    //}
+                    ObjectListGroups.Add(group);
+                    //Round up to the next 4 byte boundary
+                    bnsaStream.ReadByte(); //pos++
+                    while (bnsaStream.Position % 4 != 0)
+                    {
+                        bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
+                    }
+                }
+                Console.WriteLine("...Reached end of the file.");
             }
         }
 
