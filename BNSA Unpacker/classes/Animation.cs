@@ -54,5 +54,21 @@ namespace BNSA_Unpacker.classes
                 i++;
             }
         }
+
+        /// <summary>
+        /// Recursively outputs frames into the frames directory, as frame[animindex]-[frameindex].bin.
+        /// </summary>
+        /// <param name="outputDirectory">Directory to output data into. Do not include the frames subdirectory.</param>
+        /// <param name="animationIndex">Index of this animation</param>
+        public void Export(string outputDirectory, int animationIndex)
+        {
+            int i = 0;
+            foreach (Frame frame in Frames)
+            {
+                //Console.WriteLine("--Resolving Frame " + i + " references");
+                frame.Export(outputDirectory,animationIndex,i);
+                i++;
+            }
+        }
     }
 }

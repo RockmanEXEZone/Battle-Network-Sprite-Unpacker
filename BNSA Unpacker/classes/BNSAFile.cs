@@ -20,7 +20,7 @@ namespace BNSA_Unpacker.classes
         public List<Tileset> Tilesets = new List<Tileset>();
         public List<Palette> Palettes = new List<Palette>();
         public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
-        public List<OAMDataListGroup> ObjectListGroups = new List<OAMDataListGroup>();
+        public List<OAMDataListGroup> OAMDataListGroups = new List<OAMDataListGroup>();
 
         public Boolean ValidBNSA = false;
         public BNSAFile(string path)
@@ -157,7 +157,7 @@ namespace BNSA_Unpacker.classes
                     //    bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
                     //    break;
                     //}
-                    ObjectListGroups.Add(group);
+                    OAMDataListGroups.Add(group);
                     //Round up to the next 4 byte boundary
                     if (bnsaStream.Position < bnsaStream.Length) //Might end on a 4byte boundary already.
                     {
@@ -188,13 +188,78 @@ namespace BNSA_Unpacker.classes
         /// Changes pointers and indexes to use object references. Essentially builds the links in code that are done in the binary BNSA file.
         /// This method should be called after a BNSA file is parsed, but before writing the XML as the references are not yet established
         /// </summary>
-        public void resolveReferences()
+        public void ResolveReferences()
         {
             int i = 0;
             foreach (Animation animation in Animations)
             {
                 Console.WriteLine("Resolving References in Animation " + i);
                 animation.ResolveReferences(this);
+                i++;
+            }
+
+            i = 0;
+            foreach (MiniAnimGroup miniAnimGroup in MiniAnimGroups)
+            {
+                Console.WriteLine("Resolving References in MiniAnimation " + i);
+                miniAnimGroup.ResolveReferences(this);
+                i++;
+            }
+        }
+
+        /// <summary>
+        /// Unpacks the BNSA file to disk and writes the linking XML.
+        /// </summary>
+        /// <param name="outputPath">Directory to output data and xml to</param>
+        public void Unpack(string outputFolder)
+        {
+            //create directories and save
+            Console.WriteLine("Creating output directories");
+            string framesPath = outputFolder + @"\\frames";
+            string tilesetsPath = outputFolder + @"\\tilesets";
+            string palettesPath = outputFolder + @"\\palettes";
+            string miniAnimsPath = outputFolder + @"\\minianims";
+            string oamDataListsPath = outputFolder + @"\\oamdatalists";
+
+            Directory.CreateDirectory(outputFolder);
+            Directory.CreateDirectory(framesPath);
+            Directory.CreateDirectory(tilesetsPath);
+            Directory.CreateDirectory(palettesPath);
+            Directory.CreateDirectory(miniAnimsPath);
+            Directory.CreateDirectory(oamDataListsPath);
+
+            int i = 0;
+            foreach (Tileset tileset in Tilesets)
+            {
+                tileset.Export(tilesetsPath, i);
+                i++;
+            }
+
+            i = 0;
+            foreach (Palette palette in Palettes)
+            {
+                palette.Export(palettesPath, i);
+                i++;
+            }
+
+            i = 0;
+            foreach (Animation animation in Animations)
+            {
+                animation.Export(framesPath, i); //yes output to frame path.
+                i++;
+            }
+
+            i = 0;
+            foreach (MiniAnimGroup miniAnimGroup in MiniAnimGroups)
+            {
+                miniAnimGroup.Export(miniAnimsPath, i);
+                i++;
+            }
+
+            i = 0;
+            foreach (OAMDataListGroup oamDataListGroup in OAMDataListGroups)
+            {
+                oamDataListGroup.Export(oamDataListsPath, i);
                 i++;
             }
         }

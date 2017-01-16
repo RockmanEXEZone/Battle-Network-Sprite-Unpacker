@@ -105,7 +105,8 @@ namespace BNSA_Unpacker
         private static void unpackBNSA(string bnsaFile, string outputFolder)
         {
             BNSAFile bnsa = new BNSAFile(bnsaFile);
-            bnsa.resolveReferences();
+            bnsa.ResolveReferences();
+            bnsa.Unpack(outputFolder);
             if (true)
             {
                 endProgram("Testing done...",0);

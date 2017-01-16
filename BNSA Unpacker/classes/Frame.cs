@@ -9,6 +9,7 @@ namespace BNSA_Unpacker.classes
 {
     class Frame
     {
+        public long Pointer;
         public int TilesetPointer;
         public int PalettePointer;
         public int MiniAnimationPointer;
@@ -17,8 +18,10 @@ namespace BNSA_Unpacker.classes
         public byte Flags;
         public Boolean EndFrame = false;
         public Boolean Loops = false;
+        public byte[] Memory;
 
-        public Palette ResolvedPalette; //Seems to always point to start of palette blocks (0x20)??
+
+        //public Palette ResolvedPalette; //Seems to always point to start of palette blocks (0x20)??
         public Tileset ResolvedTileset;
         public MiniAnimGroup ResolvedMiniAnimGroup;
         public OAMDataListGroup ResolvedObjectListGroup;
@@ -29,6 +32,7 @@ namespace BNSA_Unpacker.classes
         /// <param name="stream">Stream to read a frame from</param>
         public Frame(FileStream stream)
         {
+            Pointer = stream.Position;
             TilesetPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
             PalettePointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
             MiniAnimationPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
@@ -41,6 +45,11 @@ namespace BNSA_Unpacker.classes
             //Convenience Booleans
             EndFrame = (Flags & 0x80) != 0;
             Loops = (Flags & 0x40) != 0;
+
+            //Copy Memory for Export
+            stream.Seek(Pointer, SeekOrigin.Begin);
+            Memory = new byte[20];
+            stream.Read(Memory, 0, 20);
 
         }
 
@@ -77,11 +86,11 @@ namespace BNSA_Unpacker.classes
                 }
             }
 
-            foreach (OAMDataListGroup objectListGroup in parsedBNSA.ObjectListGroups)
+            foreach (OAMDataListGroup oamDataListGroup in parsedBNSA.OAMDataListGroups)
             {
-                if (objectListGroup.Pointer == ObjectListPointer)
+                if (oamDataListGroup.Pointer == ObjectListPointer)
                 {
-                    ResolvedObjectListGroup = objectListGroup;
+                    ResolvedObjectListGroup = oamDataListGroup;
                     break;
                 }
             }
@@ -131,6 +140,11 @@ namespace BNSA_Unpacker.classes
             //        break;
             //    }
             //}
+        }
+
+        internal void Export(string outputPath, int animationIndex, int frameIndex)
+        {
+            File.WriteAllBytes(outputPath + @"\frame" + animationIndex + "-"+frameIndex+".bin", Memory);
         }
     }
 }

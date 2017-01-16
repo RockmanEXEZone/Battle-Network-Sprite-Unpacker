@@ -41,5 +41,27 @@ namespace BNSA_Unpacker.classes
                 }
             }
         }
+
+        internal void Export(string outputDirectory, int miniAnimGroupIndex)
+        {
+            int i = 0;
+            foreach (MiniAnim minianim in MiniAnimations)
+            {
+                //Console.WriteLine("--Resolving Frame " + i + " references");
+                minianim.Export(outputDirectory, miniAnimGroupIndex, i);
+                i++;
+            }
+        }
+
+        internal void ResolveReferences(BNSAFile parsedBNSA)
+        {
+            int i = 0;
+            foreach (MiniAnim miniAnim in MiniAnimations)
+            {
+                //Console.WriteLine("--Resolving Frame " + i + " references");
+                miniAnim.ResolveReferences(parsedBNSA);
+                i++;
+            }
+        }
     }
 }

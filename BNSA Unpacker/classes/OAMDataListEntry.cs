@@ -10,6 +10,8 @@ namespace BNSA_Unpacker.classes
     class OAMDataListEntry
     {
 
+        public byte[] Memory;
+        public long Pointer;
         public byte TileNumber;
         public sbyte XOrigin;
         public sbyte YOrigin;
@@ -28,12 +30,19 @@ namespace BNSA_Unpacker.classes
         public OAMDataListEntry(FileStream stream)
         {
             Console.Write("------Reading Object List Entry at 0x" + stream.Position.ToString("X2"));
+            Pointer = stream.Position;
 
             TileNumber = (byte)stream.ReadByte();
             XOrigin = (sbyte)stream.ReadByte();
             YOrigin = (sbyte)stream.ReadByte();
             Flagset1 = (byte)stream.ReadByte();
             Flagset2 = (byte)stream.ReadByte();
+
+            //Copy Memory for Export
+            stream.Seek(Pointer, SeekOrigin.Begin);
+            Memory = new byte[5];
+            stream.Read(Memory, 0, 5);
+
             if ((TileNumber & XOrigin & YOrigin & Flagset1 & Flagset2) == 0xFF)
             {
                 EndOfListEntry = true; //this is an object list entry that marks the end of the current list
@@ -112,6 +121,11 @@ namespace BNSA_Unpacker.classes
                     break;
             }
 
+        }
+
+        internal void Export(string outputDirectory, int oamDataListGroupIndex, int oamDataListIndex, int entryIndex)
+        {
+            File.WriteAllBytes(outputDirectory + @"\oamdatalists" + oamDataListGroupIndex + "-" + oamDataListIndex + "-"+entryIndex+".bin", Memory);
         }
     }
 }

@@ -40,5 +40,16 @@ namespace BNSA_Unpacker.classes
                 //}
             }
         }
+
+        internal void Export(string outputDirectory, int oamDataListGroupIndex, int oamDataListIndex)
+        {
+            int i = 0;
+            foreach (OAMDataListEntry oamDataListEntry in OAMDataListEntries)
+            {
+                //Console.WriteLine("--Resolving Frame " + i + " references");
+                oamDataListEntry.Export(outputDirectory, oamDataListGroupIndex, oamDataListIndex, i);
+                i++;
+            }
+        }
     }
 }
