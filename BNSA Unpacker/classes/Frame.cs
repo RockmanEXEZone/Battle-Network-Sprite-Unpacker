@@ -4,16 +4,18 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
     class Frame
     {
         public long Pointer;
+        public int Index; //For XML
         public int TilesetPointer;
         public int PalettePointer;
         public int MiniAnimationPointer;
-        public int ObjectListPointer;
+        public int OAMDataListPointer;
         public byte FrameDelay;
         public byte Flags;
         public Boolean EndFrame = false;
@@ -24,7 +26,7 @@ namespace BNSA_Unpacker.classes
         //public Palette ResolvedPalette; //Seems to always point to start of palette blocks (0x20)??
         public Tileset ResolvedTileset;
         public MiniAnimGroup ResolvedMiniAnimGroup;
-        public OAMDataListGroup ResolvedObjectListGroup;
+        public OAMDataList ResolvedOAMDataList;
 
         /// <summary>
         /// Creates a new frame from the next 0x20 bytes of the given stream.
@@ -36,8 +38,8 @@ namespace BNSA_Unpacker.classes
             TilesetPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
             PalettePointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
             MiniAnimationPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
-            ObjectListPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
-            FrameDelay = (byte) stream.ReadByte();
+            OAMDataListPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
+            FrameDelay = (byte)stream.ReadByte();
             stream.ReadByte(); //constant 00?
             Flags = (byte)stream.ReadByte();
             stream.ReadByte(); //constant 00 ?
@@ -76,24 +78,25 @@ namespace BNSA_Unpacker.classes
                     break;
                 }
             }
-
+            foreach (OAMDataList oamDataList in parsedBNSA.OAMDataLists)
+            {
+                if (oamDataList.Pointer == OAMDataListPointer)
+                {
+                    ResolvedOAMDataList = oamDataList;
+                    break;
+                }
+            }
             foreach (MiniAnimGroup minianimgroup in parsedBNSA.MiniAnimGroups)
             {
                 if (minianimgroup.Pointer == MiniAnimationPointer)
                 {
                     ResolvedMiniAnimGroup = minianimgroup;
+                    ResolvedMiniAnimGroup.ResolveReferences(parsedBNSA,this);
                     break;
                 }
             }
 
-            foreach (OAMDataListGroup oamDataListGroup in parsedBNSA.OAMDataListGroups)
-            {
-                if (oamDataListGroup.Pointer == ObjectListPointer)
-                {
-                    ResolvedObjectListGroup = oamDataListGroup;
-                    break;
-                }
-            }
+           
 
             //if (ResolvedPalette != null)
             //{
@@ -107,9 +110,10 @@ namespace BNSA_Unpacker.classes
             if (ResolvedTileset != null)
             {
                 Console.WriteLine("----Resolved Tileset Reference");
-            } else
+            }
+            else
             {
-                Console.WriteLine("----/!\\ Failed to Resolve Tileset");
+                Console.WriteLine("----/!\\ Failed to Resolve Tileset Pointer 0x"+TilesetPointer.ToString("X2"));
             }
 
             if (ResolvedMiniAnimGroup != null)
@@ -118,16 +122,16 @@ namespace BNSA_Unpacker.classes
             }
             else
             {
-                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim");
+                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim  0x" + MiniAnimationPointer.ToString("X2"));
             }
 
-            if (ResolvedObjectListGroup != null)
+            if (ResolvedOAMDataList != null)
             {
                 Console.WriteLine("----Resolved OAM Data List Reference");
             }
             else
             {
-                Console.WriteLine("----/!\\ Failed to Resolve OAM Data List");
+                Console.WriteLine("----/!\\ Failed to Resolve OAM Data List 0x" + OAMDataListPointer.ToString("X2"));
             }
 
 
@@ -142,9 +146,43 @@ namespace BNSA_Unpacker.classes
             //}
         }
 
+        internal XmlNode GenerateNode(XmlDocument xmlDoc)
+        {
+            XmlNode node = xmlDoc.CreateElement("frame");
+            XmlAttribute attribute = xmlDoc.CreateAttribute("index");
+            attribute.Value = Index.ToString();
+            node.Attributes.Append(attribute);
+
+            //subnodes
+            XmlNode tilesetnode = xmlDoc.CreateElement("tileset");
+            tilesetnode.InnerText = ResolvedTileset.Index.ToString();
+            XmlNode oamlistindexnode = xmlDoc.CreateElement("oamdatalistindex");
+            oamlistindexnode.InnerText = ResolvedOAMDataList.Index.ToString();
+            XmlNode minianimgroupnode = xmlDoc.CreateElement("minianimgroup");
+            minianimgroupnode.InnerText = ResolvedMiniAnimGroup.Index.ToString();
+
+            node.AppendChild(tilesetnode);
+            node.AppendChild(oamlistindexnode);
+            node.AppendChild(minianimgroupnode);
+
+            //convenience stuff (This is not read back in... most likely)
+            XmlNode framedelaynode = xmlDoc.CreateElement("convenience-framedelay");
+            framedelaynode.InnerText = FrameDelay.ToString();
+            node.AppendChild(framedelaynode);
+
+            if (EndFrame)
+            {
+                XmlNode endnode = xmlDoc.CreateElement("convenience-loops");
+                endnode.InnerText = Loops.ToString();
+                node.AppendChild(endnode);
+            }
+            return node;
+        }
+
         internal void Export(string outputPath, int animationIndex, int frameIndex)
         {
-            File.WriteAllBytes(outputPath + @"\frame" + animationIndex + "-"+frameIndex+".bin", Memory);
+            this.Index = frameIndex;
+            File.WriteAllBytes(outputPath + @"\frame" + animationIndex + "-" + frameIndex + ".bin", Memory);
         }
     }
 }

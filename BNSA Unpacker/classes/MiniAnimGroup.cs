@@ -10,6 +10,7 @@ namespace BNSA_Unpacker.classes
     class MiniAnimGroup
     {
         public long Pointer;
+        public int Index; //For XML
         public List<MiniAnim> MiniAnimations = new List<MiniAnim>();
         public Boolean IsValid = true;
         /// <summary>
@@ -44,6 +45,8 @@ namespace BNSA_Unpacker.classes
 
         internal void Export(string outputDirectory, int miniAnimGroupIndex)
         {
+            this.Index = miniAnimGroupIndex;
+
             int i = 0;
             foreach (MiniAnim minianim in MiniAnimations)
             {
@@ -53,13 +56,13 @@ namespace BNSA_Unpacker.classes
             }
         }
 
-        internal void ResolveReferences(BNSAFile parsedBNSA)
+        internal void ResolveReferences(BNSAFile parsedBNSA, Frame owningFrame)
         {
             int i = 0;
             foreach (MiniAnim miniAnim in MiniAnimations)
             {
                 //Console.WriteLine("--Resolving Frame " + i + " references");
-                miniAnim.ResolveReferences(parsedBNSA);
+                miniAnim.ResolveReferences(parsedBNSA, owningFrame);
                 i++;
             }
         }

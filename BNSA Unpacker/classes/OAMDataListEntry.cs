@@ -29,7 +29,7 @@ namespace BNSA_Unpacker.classes
         /// <param name="stream">Stream to construct a miniframe from</param>
         public OAMDataListEntry(FileStream stream)
         {
-            Console.Write("------Reading Object List Entry at 0x" + stream.Position.ToString("X2"));
+            Console.Write("------Reading OAM Data List Entry at 0x" + stream.Position.ToString("X2"));
             Pointer = stream.Position;
 
             TileNumber = (byte)stream.ReadByte();
@@ -48,7 +48,8 @@ namespace BNSA_Unpacker.classes
                 EndOfListEntry = true; //this is an object list entry that marks the end of the current list
                 Console.WriteLine("... End List Marker");
                 return;
-            } else
+            }
+            else
             {
                 Console.WriteLine(); //end line
             }
@@ -59,7 +60,7 @@ namespace BNSA_Unpacker.classes
             byte size = (byte)(Flagset1 & 0x3); //bits 0 and 1
             byte shape = (byte)(Flagset2 & 0x3); //bits 0 and 1
 
-            PaletteIndex = (byte) (Flagset2 >> 4); //bits 4-7
+            PaletteIndex = (byte)(Flagset2 >> 4); //bits 4-7
 
             //Pack bytes for size switch statement.
             byte sizeShapeMatrix = (byte)(size << 0x4); //e.g. 30
@@ -123,9 +124,16 @@ namespace BNSA_Unpacker.classes
 
         }
 
-        internal void Export(string outputDirectory, int oamDataListGroupIndex, int oamDataListIndex, int entryIndex)
+        /// <summary>
+        /// Writes the binary data for this entry to a file, named oamdatalistGROUP-SUBINDEX-INDEX.bin
+        /// </summary>
+        /// <param name="outputDirectory">Directory to output to</param>
+        /// <param name="oamDataListGroupIndex">Group Index this oam list belongs to</param>
+        /// <param name="oamDataListIndex">List this entry belongs to</param>
+        /// <param name="entryIndex">Index of this entry in the list</param>
+        internal void Export(string outputDirectory, int oamDataListGroupIndex, int entryIndex)
         {
-            File.WriteAllBytes(outputDirectory + @"\oamdatalists" + oamDataListGroupIndex + "-" + oamDataListIndex + "-"+entryIndex+".bin", Memory);
+            File.WriteAllBytes(outputDirectory + @"\oamdatalist" + oamDataListGroupIndex + "-" + entryIndex + ".bin", Memory);
         }
     }
 }

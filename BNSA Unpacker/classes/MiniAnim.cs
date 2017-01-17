@@ -11,7 +11,6 @@ namespace BNSA_Unpacker.classes
     {
         public long Pointer;
         public List<MiniFrame> MiniFrames;
-
         public bool IsValid = false; //turns true if final frame of anim ends properly.
 
         /// <summary>
@@ -51,13 +50,13 @@ namespace BNSA_Unpacker.classes
             }
         }
 
-        internal void ResolveReferences(BNSAFile parsedBNSA)
+        internal void ResolveReferences(BNSAFile parsedBNSA, Frame owningFrame)
         {
             int i = 0;
             foreach (MiniFrame miniFrame in MiniFrames)
             {
                 //Console.WriteLine("--Resolving Frame " + i + " references");
-                miniFrame.ResolveReferences(parsedBNSA);
+                miniFrame.ResolveReferences(parsedBNSA, owningFrame);
                 i++;
             }
         }

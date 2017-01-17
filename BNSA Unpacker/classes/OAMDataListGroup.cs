@@ -7,11 +7,12 @@ using System.Threading.Tasks;
 
 namespace BNSA_Unpacker.classes
 {
-    class OAMDataListGroup
+    class OAMDataListsOLDBLOCK
     {
         public long Pointer;
+        public int Index;
         public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
-        public OAMDataListGroup(FileStream stream)
+        public OAMDataListsOLDBLOCK(FileStream stream)
         {
             Pointer = stream.Position;
             Console.WriteLine("--Reading OAM Data List Pointer Table (Group) at 0x" + stream.Position.ToString("X2"));
@@ -35,13 +36,15 @@ namespace BNSA_Unpacker.classes
             }
         }
 
-        internal void Export(string outputDirectory, int oamDataListGroupIndex)
+        //THIS IS NOT USED
+        internal void Export(string outputDirectory)
         {
+           // this.Index = oamDataListGroupIndex;
             int i = 0;
             foreach (OAMDataList oamDataList in OAMDataLists)
             {
                 //Console.WriteLine("--Resolving Frame " + i + " references");
-                oamDataList.Export(outputDirectory, oamDataListGroupIndex, i);
+                oamDataList.Export(outputDirectory, i);
                 i++;
             }
         }

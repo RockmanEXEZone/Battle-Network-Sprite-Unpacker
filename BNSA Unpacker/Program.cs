@@ -107,6 +107,7 @@ namespace BNSA_Unpacker
             BNSAFile bnsa = new BNSAFile(bnsaFile);
             bnsa.ResolveReferences();
             bnsa.Unpack(outputFolder);
+            bnsa.GenerateLinkingXML(outputFolder);
             if (true)
             {
                 endProgram("Testing done...",0);

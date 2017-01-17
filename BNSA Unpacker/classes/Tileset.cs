@@ -10,13 +10,15 @@ namespace BNSA_Unpacker.classes
     class Tileset
     {
         public long Pointer;
+        public int Index;
         public int BitmapSize;
         public byte[] BitmapData;
         public byte[] Memory;
 
-        public Tileset(FileStream stream)
+        public Tileset(FileStream stream, int index)
         {
             Pointer = stream.Position;
+            Index = index;
             Console.WriteLine("Reading Tileset at 0x" + Pointer.ToString("X2"));
             BitmapSize = BNSAFile.ReadIntegerFromStream(stream);
             BitmapData = new byte[BitmapSize];
@@ -61,9 +63,7 @@ namespace BNSA_Unpacker.classes
         /// <param name="index">Tileset index, as part of the filename</param>
         public void Export(string outputPath, int index)
         {
-            byte[] tilesetMemory = new byte[BitmapSize + 4];
-
-            File.WriteAllBytes(outputPath + @"\tileset" + index + ".bin", Memory);
+            File.WriteAllBytes(outputPath + @"\tileset" + index.ToString().PadLeft(3,'0') + ".bin", Memory);
         }
     }
 }

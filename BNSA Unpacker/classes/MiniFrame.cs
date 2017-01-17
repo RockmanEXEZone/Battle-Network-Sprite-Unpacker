@@ -11,13 +11,13 @@ namespace BNSA_Unpacker.classes
     {
         public byte[] Memory;
         public long Pointer;
-        public byte OAMDataListGroupIndex;
+        public byte OAMDataListIndex;
         public byte FrameDelay;
         public byte Flags;
         public Boolean EndFrame;
         public Boolean Loops;
         public Boolean IsValid = true; //only end frames can be invalid... ish.
-        public OAMDataListGroup ResolvedOAMDataListGroup;
+        public OAMDataListEntry ResolvedOAMDataListEntry;
 
         /// <summary>
         /// Constructs a mini-frame object, part of a mini-animation.
@@ -26,7 +26,7 @@ namespace BNSA_Unpacker.classes
         public MiniFrame(FileStream stream)
         {
             Pointer = stream.Position;
-            OAMDataListGroupIndex = (byte)stream.ReadByte();
+            OAMDataListIndex = (byte)stream.ReadByte();
             FrameDelay = (byte)stream.ReadByte();
             Flags = (byte)stream.ReadByte();
 
@@ -54,9 +54,14 @@ namespace BNSA_Unpacker.classes
             }
         }
 
-        internal void ResolveReferences(BNSAFile parsedBNSA)
+        /// <summary>
+        /// Maps the OAM Data List Index to the proper data list object
+        /// </summary>
+        /// <param name="parsedBNSA">Parsed BNSA File to link against</param>
+        internal void ResolveReferences(BNSAFile parsedBNSA, Frame frame)
         {
-            ResolvedOAMDataListGroup = parsedBNSA.OAMDataListGroups[OAMDataListGroupIndex];
+            Console.WriteLine("Resolving OAMIndex " + OAMDataListIndex);
+            ResolvedOAMDataListEntry = frame.ResolvedOAMDataList.OAMDataListEntries[OAMDataListIndex];
         }
 
         /// <summary>

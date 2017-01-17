@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace BNSA_Unpacker.classes
 {
@@ -20,7 +22,7 @@ namespace BNSA_Unpacker.classes
         public List<Tileset> Tilesets = new List<Tileset>();
         public List<Palette> Palettes = new List<Palette>();
         public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
-        public List<OAMDataListGroup> OAMDataListGroups = new List<OAMDataListGroup>();
+        public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
 
         public Boolean ValidBNSA = false;
         public BNSAFile(string path)
@@ -54,11 +56,13 @@ namespace BNSA_Unpacker.classes
                 //Read Tilesets
                 TilesetStartPointer = bnsaStream.Position;
                 Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X2"));
+                int index = 0;
                 while (bnsaStream.Position < ProbablyPaletteStartPointer)
                 {
                     //Read Tilesets
-                    Tileset ts = new Tileset(bnsaStream);
+                    Tileset ts = new Tileset(bnsaStream, index);
                     Tilesets.Add(ts); //Might need some extra checking...
+                    index++;
                 }
 
                 //Read Palettes
@@ -144,20 +148,15 @@ namespace BNSA_Unpacker.classes
                     }
                 }
 
-                //Read Object Lists
-                Console.WriteLine("Reading Object Lists data at 0x" + bnsaStream.Position.ToString("X2"));
+
+
+                //Read OAM Data Block Lists
+                Console.WriteLine("Reading OAM Data Blocks at 0x" + bnsaStream.Position.ToString("X2"));
                 while (bnsaStream.Position < bnsaStream.Length)
                 {
-                    //Validate next data is a mini animation.
-                    //long listPosition = bnsaStream.Position;
-                    OAMDataListGroup group = new OAMDataListGroup(bnsaStream);
-                    //if (!group.IsValid)
-                    //{
-                    //    //End of Mini-Anims
-                    //    bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
-                    //    break;
-                    //}
-                    OAMDataListGroups.Add(group);
+                    OAMDataList oamDataList = new OAMDataList(bnsaStream);
+                    OAMDataLists.Add(oamDataList);
+
                     //Round up to the next 4 byte boundary
                     if (bnsaStream.Position < bnsaStream.Length) //Might end on a 4byte boundary already.
                     {
@@ -168,7 +167,15 @@ namespace BNSA_Unpacker.classes
                         }
                     }
                 }
-                Console.WriteLine("...Reached end of the file.");
+
+                if (bnsaStream.Position != bnsaStream.Length)
+                {
+                    Console.WriteLine("...Nothing left to parse but we aren't at the end of the file!");
+                }
+                else
+                {
+                    Console.WriteLine("...Reached end of the file.");
+                }
             }
         }
 
@@ -198,13 +205,14 @@ namespace BNSA_Unpacker.classes
                 i++;
             }
 
-            i = 0;
-            foreach (MiniAnimGroup miniAnimGroup in MiniAnimGroups)
-            {
-                Console.WriteLine("Resolving References in MiniAnimation " + i);
-                miniAnimGroup.ResolveReferences(this);
-                i++;
-            }
+            //minianims are resolved in frame
+            //i = 0;
+            //foreach (MiniAnimGroup miniAnimGroup in MiniAnimGroups)
+            //{
+            //    Console.WriteLine("Resolving References in MiniAnimation " + i);
+            //    miniAnimGroup.ResolveReferences(this);
+            //    i++;
+            //}
         }
 
         /// <summary>
@@ -257,10 +265,63 @@ namespace BNSA_Unpacker.classes
             }
 
             i = 0;
-            foreach (OAMDataListGroup oamDataListGroup in OAMDataListGroups)
+            foreach (OAMDataList oamDataList in OAMDataLists)
             {
-                oamDataListGroup.Export(oamDataListsPath, i);
+                oamDataList.Export(oamDataListsPath, i);
                 i++;
+            }
+        }
+
+        /// <summary>
+        /// Generates XML file that ties all the exported resources together and can be used to recompile a BNSA file with this program (-r)
+        /// </summary>
+        /// <param name="outputFolder">Directory to put bnsa.xml into</param>
+        public void GenerateLinkingXML(string outputFolder)
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            XmlNode rootNode = xmlDoc.CreateElement("bnsafile");
+            xmlDoc.AppendChild(rootNode);
+
+            //ANIMATIONS
+            XmlNode animationsNode = xmlDoc.CreateElement("animations");
+            rootNode.AppendChild(animationsNode);
+            int index = 0;
+            foreach (Animation anim in Animations)
+            {
+                XmlNode animationNode = xmlDoc.CreateElement("animation");
+                XmlAttribute attribute = xmlDoc.CreateAttribute("index");
+                attribute.Value = index.ToString();
+                animationNode.Attributes.Append(attribute);
+                List<XmlNode> frameNodes = anim.GetChildNodes(xmlDoc);
+                appendAllNodes(frameNodes, animationNode);
+                animationsNode.AppendChild(animationNode);
+                index++;
+            }
+
+            //PALETTES ARE REPACKED BY WHATS IN THE palettes DIRECTORY AS paletteXX.bin. Reads 00-15.
+            //TILESETS ARE REPACKED BY WHATS IN THE tilesets DIRECTORY AS tilesetXXX.bin. Reads 000-999. The XXX refers to the tileset index, which is referenced by the animation-frame.
+
+            //MiniAnimationGroups
+            foreach (MiniAnimGroup minianimgroup in MiniAnimGroups)
+            {
+
+            }
+
+            string filename = "\\sprite.xml";
+            xmlDoc.Save(outputFolder + filename);
+
+        }
+
+        /// <summary>
+        /// Convenience method to append a list of nodes to another
+        /// </summary>
+        /// <param name="nodesToAppend">Node list to append in order</param>
+        /// <param name="nodeToAppendTo">Node to append to</param>
+        private void appendAllNodes(List<XmlNode> nodesToAppend, XmlNode nodeToAppendTo)
+        {
+            foreach (XmlNode node in nodesToAppend)
+            {
+                nodeToAppendTo.AppendChild(node);
             }
         }
 

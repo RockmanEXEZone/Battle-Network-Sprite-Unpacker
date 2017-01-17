@@ -25,7 +25,7 @@ namespace BNSA_Unpacker.classes
         /// <param name="index">Palette index, as part of the filename</param>
         public void Export(string outputPath, int index)
         {
-            File.WriteAllBytes(outputPath + @"\palette" + index + ".bin", Memory);
+            File.WriteAllBytes(outputPath + @"\palette" + index.ToString().PadLeft(2,'0') + ".bin", Memory);
         }
     }
 }

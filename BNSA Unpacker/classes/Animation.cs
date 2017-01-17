@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
@@ -69,6 +70,16 @@ namespace BNSA_Unpacker.classes
                 frame.Export(outputDirectory,animationIndex,i);
                 i++;
             }
+        }
+
+        internal List<XmlNode> GetChildNodes(XmlDocument xmlDoc)
+        {
+            List<XmlNode> nodes = new List<XmlNode>();
+            foreach (Frame frame in Frames)
+            {
+                nodes.Add(frame.GenerateNode(xmlDoc));
+            }
+            return nodes;
         }
     }
 }
