@@ -17,6 +17,7 @@ namespace BNSA_Unpacker.classes
         List<MiniAnimGroup> MiniAnimationGroups;
         List<OAMDataList> OAMDataLists;
         List<Animation> Animations;
+        List<Tileset> Tilesets;
         /// <summary>
         /// Reads a project XML file and relinks all the parts for file rebuilding
         /// </summary>
@@ -88,13 +89,30 @@ namespace BNSA_Unpacker.classes
                 Animations.Add(animation);
                 Console.WriteLine("OK - animation contains all direct binary references");
             }
+            //Read Tilesets
+            Tilesets = new List<Tileset>();
+            int index = 0;
+            for (int i = 0; i < 999; i++)
+            {
+                string tilesetPath = tilesetBasepath + index.ToString().PadLeft(3, '0') + ".bin";
+                if (File.Exists(tilesetPath))
+                {
+                    Tileset tileset = new Tileset(tilesetPath, i);
+                    Tilesets.Add(tileset);
+                }
+                else
+                {
+                    break; //No more tilesets
+                }
+                index++;
+            }
+            Console.WriteLine("Read " + Tilesets.Count + " tilesets");
 
             //Read Palettes
             Palettes = new List<Palette>();
-            int index = 0;
             for (int i = 0; i < 16; i++)
             {
-                string palettePath = palettesBasepath + index.ToString().PadLeft(2, '0') + ".bin";
+                string palettePath = palettesBasepath + i.ToString().PadLeft(2, '0') + ".bin";
                 if (File.Exists(palettePath))
                 {
                     Palette palette = new Palette(palettePath);
@@ -104,8 +122,6 @@ namespace BNSA_Unpacker.classes
                 {
                     break; //No more palettes
                 }
-
-                index++;
             }
             Console.WriteLine("Read " + Palettes.Count + " palettes");
 
@@ -153,7 +169,7 @@ namespace BNSA_Unpacker.classes
             for (int i = 0; i <= maxindex; i++)
             {
                 Console.WriteLine("Parsing OAM Data List " + i);
-                OAMDataList list = new OAMDataList(oamDataListsBasepath,i);
+                OAMDataList list = new OAMDataList(oamDataListsBasepath, i);
                 OAMDataLists.Add(list);
             }
         }
@@ -173,9 +189,13 @@ namespace BNSA_Unpacker.classes
         public void RepackBNSA(string destinationFile)
         {
             Console.WriteLine("Repacking BNSA");
+
+            long palettesPointer;
+
             try
             {
-                FileStream stream = new FileStream(destinationFile, FileMode.Create);
+                FileStream fstream = new FileStream(destinationFile, FileMode.Create);
+                BinaryWriter stream = new BinaryWriter(fstream);
                 //Write Header
                 string tilesetBasepath = Directory.GetParent(FilePath).FullName + "\\tilesets\\";
 
@@ -183,13 +203,137 @@ namespace BNSA_Unpacker.classes
                            .OrderByDescending(f => f.Length)
                            .FirstOrDefault();
                 //byte largestTileCount = (byte)Math.Ceiling((decimal)largestTileset.Length / 0x20);
-                byte largestTileCount = (byte) (largestTileset.Length / 0x20);
+                byte largestTileCount = (byte)(largestTileset.Length / 0x20);
 
-                stream.WriteByte(largestTileCount);
-                stream.WriteByte(0x0);
-                stream.WriteByte(0x1);
-                stream.WriteByte((byte) Animations.Count);
+                stream.Write(largestTileCount);
+                stream.Write((byte)0x0);
+                stream.Write((byte)0x1);
+                stream.Write((byte)Animations.Count);
 
+                //Animations Pointer Table
+                int currentOffset = Animations.Count * 4;
+                foreach (Animation anim in Animations)
+                {
+                    Console.WriteLine("Write Animation Pointer 0x" + currentOffset.ToString("X2"));
+                    stream.Write(currentOffset);
+                    currentOffset += anim.Frames.Count * 0x14;
+                }
+
+                //Write Frames
+                foreach (Animation anim in Animations)
+                {
+                    Console.WriteLine("Writing Animation to 0x" + stream.BaseStream.Position.ToString("X2"));
+
+                    foreach (Frame frame in anim.Frames)
+                    {
+                        Console.WriteLine("--Writing Frame to 0x" + stream.BaseStream.Position.ToString("X2"));
+                        stream.Write(frame.GenerateMemoryNoPointers(stream));
+                    }
+                }
+
+                //Write Tilesets
+                foreach (Tileset tileset in Tilesets)
+                {
+                    Console.WriteLine("Write Tileset " + tileset.Index + " to 0x" + stream.BaseStream.Position.ToString("X2"));
+                    tileset.Pointer = stream.BaseStream.Position;
+                    stream.Write(tileset.BitmapSize);
+                    stream.Write(tileset.BitmapData);
+                }
+
+                //Write Palettes
+                palettesPointer = stream.BaseStream.Position;
+                Console.WriteLine("Writing Palettes Block at 0x" + palettesPointer.ToString("X2"));
+                stream.Write(0x20); //Palettes Size
+                foreach (Palette palette in Palettes)
+                {
+                    Console.WriteLine("--Writing Palette at 0x" + stream.BaseStream.Position.ToString("X2"));
+                    stream.Write(palette.Memory);
+                }
+
+                //WriteMiniAnims
+                long miniAnimsStartPointer = stream.BaseStream.Position;
+                foreach (MiniAnimGroup group in MiniAnimationGroups)
+                {
+                    long groupPointerTablePointer = stream.BaseStream.Position;
+                    //Write AnimGroup Pointer Table
+                    currentOffset = group.MiniAnimations.Count * 4; //End of pointer table offset
+                    foreach (MiniAnim miniAnim in group.MiniAnimations)
+                    {
+                        Console.WriteLine("Write MiniAnimGroup SubAnim Pointer 0x" + currentOffset.ToString("X2"));
+                        stream.Write(currentOffset);
+                        currentOffset += miniAnim.MiniFrames.Count * 0x3 + 3;
+                        currentOffset += 1; //Round Up padding calc
+                        while ((groupPointerTablePointer + currentOffset) % 4 != 0)
+                        {
+                            currentOffset++;
+                        }
+                    }
+
+                    Console.WriteLine("Writing MiniAnimationGroup to 0x" + stream.BaseStream.Position.ToString("X2"));
+                    group.Pointer = stream.BaseStream.Position;
+                    foreach (MiniAnim miniAnim in group.MiniAnimations)
+                    {
+                        Console.WriteLine("--Writing MiniAnimation to 0x" + stream.BaseStream.Position.ToString("X2"));
+                        foreach (MiniFrame mf in miniAnim.MiniFrames)
+                        {
+                            stream.Write(mf.Memory);
+                        }
+                        //AnimTerminator
+                        stream.Write((byte)0xFF);
+                        stream.Write((byte)0xFF);
+                        stream.Write((byte)0xFF);
+
+                        //Round Up Padding
+                        stream.Write((byte)0x00);
+                        while (stream.BaseStream.Position % 4 != 0)
+                        {
+                            stream.Write((byte)0x00);
+                        }
+                    }
+                }
+                //Write OAM Datalists
+                long objectListsStartPointer = stream.BaseStream.Position;
+                Console.WriteLine("OAMDataLists Block: 0x" + stream.BaseStream.Position.ToString("X2"));
+
+                foreach (OAMDataList list in OAMDataLists)
+                {
+                    long groupPointerTablePointer = stream.BaseStream.Position;
+                    //Write AnimGroup Pointer Table
+                    currentOffset = list.OAMDataListEntries.Count * 4; //End of pointer table offset
+                    foreach (OAMDataListEntry dataList in list.OAMDataListEntries)
+                    {
+                        Console.WriteLine("Write OAM Data List Pointer 0x" + currentOffset.ToString("X2"));
+                        stream.Write(currentOffset);
+                        //currentOffset += dataList.Count * 0x5 + 5;
+                        currentOffset += 1; //Round Up padding calc
+                        while ((groupPointerTablePointer + currentOffset) % 4 != 0)
+                        {
+                            currentOffset++;
+                        }
+                    }
+
+                    Console.WriteLine("Writing OAMDataList to 0x" + stream.BaseStream.Position.ToString("X2"));
+                    list.Pointer = stream.BaseStream.Position;
+                    foreach (OAMDataListEntry listEntry in list.OAMDataListEntries)
+                    {
+                        Console.WriteLine("--Writing OAMDataListEntry to 0x" + stream.BaseStream.Position.ToString("X2"));
+                        stream.Write(listEntry.Memory);
+                    }
+                    //List Terminator
+                    stream.Write((byte)0xFF);
+                    stream.Write((byte)0xFF);
+                    stream.Write((byte)0xFF);
+                    stream.Write((byte)0xFF);
+                    stream.Write((byte)0xFF);
+
+                    //Round Up Padding
+                    stream.Write((byte)0x00);
+                    while (stream.BaseStream.Position % 4 != 0)
+                    {
+                        stream.Write((byte)0x00);
+
+                    }
+                }
 
                 stream.Close();
             }

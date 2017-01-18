@@ -25,9 +25,9 @@ namespace BNSA_Unpacker.classes
         private string v;
 
         /// <summary>
-        /// Constructs a mini-frame object, part of a mini-animation.
+        /// Constructs an OAM Data List Entry from the 5-byte binary in a BNSA file
         /// </summary>
-        /// <param name="stream">Stream to construct a miniframe from</param>
+        /// <param name="stream">Stream to construct a OAM Data Entry from</param>
         public OAMDataListEntry(FileStream stream)
         {
             Console.Write("------Reading OAM Data List Entry at 0x" + stream.Position.ToString("X2"));
@@ -141,9 +141,9 @@ namespace BNSA_Unpacker.classes
         /// <param name="oamDataListGroupIndex">Group Index this oam list belongs to</param>
         /// <param name="oamDataListIndex">List this entry belongs to</param>
         /// <param name="entryIndex">Index of this entry in the list</param>
-        internal void Export(string outputDirectory, int oamDataListGroupIndex, int entryIndex)
+        internal void Export(string outputDirectory, int oamDataListGroupIndex, int oamDataListIndex, int entryIndex)
         {
-            File.WriteAllBytes(outputDirectory + @"\oamdatalist" + oamDataListGroupIndex + "-" + entryIndex + ".bin", Memory);
+            File.WriteAllBytes(outputDirectory + @"\oamdatalist" + oamDataListGroupIndex + "-" + oamDataListIndex + "-" + entryIndex + ".bin", Memory);
         }
     }
 }

@@ -22,13 +22,15 @@ namespace BNSA_Unpacker.classes
         public List<Tileset> Tilesets = new List<Tileset>();
         public List<Palette> Palettes = new List<Palette>();
         public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
-        public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
+        public List<OAMDataListGroup> OAMDataListGroups = new List<OAMDataListGroup>();
 
         public Boolean ValidBNSA = false;
 
         public static readonly string MiniAnimationXMLNodeName = "minianimgroup";
         public static readonly string OAMDataListXMLNodeName = "oamdatalistindex";
         public static readonly string TilesetXMLNodeName = "tileset";
+        public static readonly string FrameDelayXMLNodeName = "framedelay";
+        public static readonly string LoopsXMLNodeName = "loops";
 
         public BNSAFile(string path)
         {
@@ -159,17 +161,19 @@ namespace BNSA_Unpacker.classes
                 Console.WriteLine("Reading OAM Data Blocks at 0x" + bnsaStream.Position.ToString("X2"));
                 while (bnsaStream.Position < bnsaStream.Length)
                 {
-                    OAMDataList oamDataList = new OAMDataList(bnsaStream);
-                    OAMDataLists.Add(oamDataList);
-
-                    //Round up to the next 4 byte boundary
-                    if (bnsaStream.Position < bnsaStream.Length) //Might end on a 4byte boundary already.
+                    OAMDataListGroup oamListBlock = new OAMDataListGroup(bnsaStream);
+                    OAMDataListGroups.Add(oamListBlock);
+                    //Round up to the next 4 byte boundary (if possible)
+                    if (bnsaStream.Position < bnsaStream.Length)
                     {
                         bnsaStream.ReadByte(); //pos++
                         while (bnsaStream.Position % 4 != 0)
                         {
                             bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
                         }
+                    } else
+                    {
+                        Console.WriteLine("Not rounding up boundary because at or past end of stream.");
                     }
                 }
 
@@ -270,7 +274,7 @@ namespace BNSA_Unpacker.classes
             }
 
             i = 0;
-            foreach (OAMDataList oamDataList in OAMDataLists)
+            foreach (OAMDataListGroup oamDataList in OAMDataListGroups)
             {
                 oamDataList.Export(oamDataListsPath, i);
                 i++;

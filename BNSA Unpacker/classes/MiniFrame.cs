@@ -17,7 +17,7 @@ namespace BNSA_Unpacker.classes
         public Boolean EndFrame;
         public Boolean Loops;
         public Boolean IsValid = true; //only end frames can be invalid... ish.
-        public OAMDataListEntry ResolvedOAMDataListEntry;
+        public OAMDataList ResolvedOAMDataList;
 
         /// <summary>
         /// Constructs a mini-frame object, part of a mini-animation.
@@ -54,9 +54,17 @@ namespace BNSA_Unpacker.classes
             }
         }
 
+        /// <summary>
+        /// Constructs a MiniFrame object by reading in a miniframe file (binary) from disk.
+        /// Sets the endframe and loops variable.
+        /// </summary>
+        /// <param name="filePath">File to read</param>
         public MiniFrame(string filePath)
         {
             Memory = File.ReadAllBytes(filePath);
+            Flags = Memory[2];
+            EndFrame = (Flags & 0x80) != 0;
+            Loops = (Flags & 0x40) != 0;
         }
 
         /// <summary>
@@ -65,8 +73,15 @@ namespace BNSA_Unpacker.classes
         /// <param name="parsedBNSA">Parsed BNSA File to link against</param>
         internal void ResolveReferences(BNSAFile parsedBNSA, Frame frame)
         {
-            Console.WriteLine("Resolving OAMIndex " + OAMDataListIndex);
-            ResolvedOAMDataListEntry = frame.ResolvedOAMDataList.OAMDataListEntries[OAMDataListIndex];
+            Console.Write("Resolving OAMIndex " + OAMDataListIndex);
+            ResolvedOAMDataList = frame.ResolvedOAMDataListGroup.OAMDataLists[OAMDataListIndex];
+            if (ResolvedOAMDataList == null)
+            {
+                Console.WriteLine("... Failed to resolve: " + OAMDataListIndex);
+            } else
+            {
+                Console.WriteLine("... OK");
+            }
         }
 
         /// <summary>

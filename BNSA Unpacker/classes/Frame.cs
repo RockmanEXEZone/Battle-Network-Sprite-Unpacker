@@ -34,7 +34,7 @@ namespace BNSA_Unpacker.classes
         public long Pointer;
         public Tileset ResolvedTileset;
         public MiniAnimGroup ResolvedMiniAnimGroup;
-        public OAMDataList ResolvedOAMDataList;
+        public OAMDataListGroup ResolvedOAMDataListGroup;
 
         /// <summary>
         /// Creates a new frame from the next 0x20 bytes of the given stream.
@@ -73,6 +73,26 @@ namespace BNSA_Unpacker.classes
             TilesetIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.TilesetXMLNodeName).InnerText);
             OAMDataListIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.OAMDataListXMLNodeName).InnerText);
             MiniAnimationIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.MiniAnimationXMLNodeName).InnerText);
+            FrameDelay = Byte.Parse(node.SelectSingleNode(BNSAFile.FrameDelayXMLNodeName).InnerText);
+
+            EndFrame = false;
+            Loops = false;
+            XmlNode loopNode = node.SelectSingleNode(BNSAFile.LoopsXMLNodeName);
+            if (loopNode != null)
+            {
+                EndFrame = true;
+                Loops = Boolean.Parse(loopNode.InnerText);
+            }
+
+            Flags = 0;
+            if (EndFrame)
+            {
+                Flags |= 0x80;
+                if (Loops)
+                {
+                    Flags |= 0x40;
+                }
+            }
 
             Console.WriteLine("Read Index " + Index);
         }
@@ -100,11 +120,11 @@ namespace BNSA_Unpacker.classes
                     break;
                 }
             }
-            foreach (OAMDataList oamDataList in parsedBNSA.OAMDataLists)
+            foreach (OAMDataListGroup oamDataList in parsedBNSA.OAMDataListGroups)
             {
                 if (oamDataList.Pointer == OAMDataListPointer)
                 {
-                    ResolvedOAMDataList = oamDataList;
+                    ResolvedOAMDataListGroup = oamDataList;
                     break;
                 }
             }
@@ -147,7 +167,7 @@ namespace BNSA_Unpacker.classes
                 Console.WriteLine("----/!\\ Failed to Resolve MiniAnim  0x" + MiniAnimationPointer.ToString("X2"));
             }
 
-            if (ResolvedOAMDataList != null)
+            if (ResolvedOAMDataListGroup != null)
             {
                 Console.WriteLine("----Resolved OAM Data List Reference");
             }
@@ -179,22 +199,20 @@ namespace BNSA_Unpacker.classes
             XmlNode tilesetnode = xmlDoc.CreateElement(BNSAFile.TilesetXMLNodeName);
             tilesetnode.InnerText = ResolvedTileset.Index.ToString();
             XmlNode oamlistindexnode = xmlDoc.CreateElement(BNSAFile.OAMDataListXMLNodeName);
-            oamlistindexnode.InnerText = ResolvedOAMDataList.Index.ToString();
+            oamlistindexnode.InnerText = ResolvedOAMDataListGroup.Index.ToString();
             XmlNode minianimgroupnode = xmlDoc.CreateElement(BNSAFile.MiniAnimationXMLNodeName);
             minianimgroupnode.InnerText = ResolvedMiniAnimGroup.Index.ToString();
+            XmlNode framedelaynode = xmlDoc.CreateElement(BNSAFile.FrameDelayXMLNodeName);
+            framedelaynode.InnerText = FrameDelay.ToString();
 
             node.AppendChild(tilesetnode);
             node.AppendChild(oamlistindexnode);
             node.AppendChild(minianimgroupnode);
-
-            //convenience stuff (This is not read back in... most likely)
-            XmlNode framedelaynode = xmlDoc.CreateElement("convenience-framedelay");
-            framedelaynode.InnerText = FrameDelay.ToString();
             node.AppendChild(framedelaynode);
 
             if (EndFrame)
             {
-                XmlNode endnode = xmlDoc.CreateElement("convenience-loops");
+                XmlNode endnode = xmlDoc.CreateElement(BNSAFile.LoopsXMLNodeName);
                 endnode.InnerText = Loops.ToString();
                 node.AppendChild(endnode);
             }
@@ -205,6 +223,17 @@ namespace BNSA_Unpacker.classes
         {
             this.Index = frameIndex;
             File.WriteAllBytes(outputPath + @"\frame" + animationIndex + "-" + frameIndex + ".bin", Memory);
+        }
+
+        internal byte[] GenerateMemoryNoPointers(BinaryWriter stream)
+        {
+            Pointer = stream.BaseStream.Position;
+            byte[] nopointerMemory = new byte[20];
+            nopointerMemory[0x10] = FrameDelay;
+            nopointerMemory[0x12] = Flags;
+
+
+            return nopointerMemory;
         }
     }
 }

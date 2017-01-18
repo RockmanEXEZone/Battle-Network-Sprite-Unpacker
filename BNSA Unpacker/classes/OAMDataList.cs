@@ -13,8 +13,6 @@ namespace BNSA_Unpacker.classes
         public int Index;
         public List<OAMDataListEntry> OAMDataListEntries = new List<OAMDataListEntry>();
         public Boolean IsValid = true;
-        private string oamDataListsBasepath;
-        private int i;
 
         /// <summary>
         /// Constructs a list of mini-animations from a file stream, starting with the beginning pointer table.
@@ -24,33 +22,7 @@ namespace BNSA_Unpacker.classes
         {
             Pointer = stream.Position;
             Console.WriteLine("----Reading OAM Data List at 0x" + Pointer.ToString("X2"));
-            //while (/*stream.Position < FirstObjectEntryPointer + Pointer*/ true)
-            //{
-
-            //    //long nextPosition = stream.Position;
-            //    OAMDataListEntry oamEntry = new OAMDataListEntry(stream);
-            //    if (oamEntry.EndOfListEntry)
-            //    {
-            //        break; //This is the end of the list indicator. Don't add to list, and return.
-            //    }
-
-            //    //List Entry
-            //    OAMDataListEntries.Add(oamEntry);
-            //    //if (nextPosition < FirstObjectEntryPointer + Pointer)
-            //    //{
-            //    //    //Read the next 4 bytes in the pointer table as its a new pointer
-            //    //    stream.Seek(nextPosition, SeekOrigin.Begin);
-            //    //}
-            //}
-
-            int firstOAMListPointer = int.MaxValue;
-            while (stream.Position < firstOAMListPointer + Pointer)
             {
-                int oamDataListPointer = BNSAFile.ReadIntegerFromStream(stream);
-                firstOAMListPointer = Math.Min(firstOAMListPointer, oamDataListPointer); //should only be triggered by the first pointer as it goes ascending.
-                long nextPosition = stream.Position; //Address of next pointer in the list
-                stream.Seek(oamDataListPointer + Pointer, SeekOrigin.Begin);
-                //long nextPosition = stream.Position;
                 while (true)
                 {
                     OAMDataListEntry oamEntry = new OAMDataListEntry(stream);
@@ -58,14 +30,8 @@ namespace BNSA_Unpacker.classes
                     {
                         break; //This is the end of the list indicator. Don't add to list, and return.
                     }
-
                     //List Entry
                     OAMDataListEntries.Add(oamEntry);
-                }
-                if (nextPosition < firstOAMListPointer + Pointer)
-                {
-                    //Read the next 4 bytes in the pointer table as its a new pointer
-                    stream.Seek(nextPosition, SeekOrigin.Begin);
                 }
             }
         }
@@ -89,14 +55,14 @@ namespace BNSA_Unpacker.classes
             }
         }
 
-        internal void Export(string outputDirectory, int oamDataListIndex/*, int oamDataListIndex*/)
+        internal void Export(string outputDirectory, int oamDataGroupIndex, int oamDataListIndex)
         {
             Index = oamDataListIndex;
             int i = 0;
             foreach (OAMDataListEntry oamDataListEntry in OAMDataListEntries)
             {
                 //Console.WriteLine("--Resolving Frame " + i + " references");
-                oamDataListEntry.Export(outputDirectory, oamDataListIndex, i);
+                oamDataListEntry.Export(outputDirectory, oamDataGroupIndex, oamDataListIndex, i);
                 i++;
             }
         }

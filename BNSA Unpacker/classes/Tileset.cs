@@ -14,6 +14,7 @@ namespace BNSA_Unpacker.classes
         public int BitmapSize;
         public byte[] BitmapData;
         public byte[] Memory;
+        private string tilesetPath;
 
         public Tileset(FileStream stream, int index)
         {
@@ -28,6 +29,18 @@ namespace BNSA_Unpacker.classes
             stream.Seek(Pointer, SeekOrigin.Begin);
             Memory = new byte[BitmapSize + 4];
             stream.Read(Memory, 0, BitmapSize + 4);
+        }
+
+        /// <summary>
+        /// Reads the memory of a tileset into this object
+        /// </summary>
+        /// <param name="tilesetPath">Path to tileset bitmap data</param>
+        /// <param name="index">Tileset Index</param>
+        public Tileset(string tilesetPath, int index)
+        {
+            this.Index = index;
+            BitmapData = File.ReadAllBytes(tilesetPath);
+            BitmapSize = BitmapData.Length;
         }
 
         private bool verifyValidTilesetSize(byte[] archiveFile, int offset)
@@ -57,13 +70,13 @@ namespace BNSA_Unpacker.classes
         }
 
         /// <summary>
-        /// Writes this tileset's binary to disk in its own file.
+        /// Writes this tileset's binary to disk in its own file. Does not include the bitmap data size header.
         /// </summary>
         /// <param name="outputPath">Directory to put .bin into</param>
         /// <param name="index">Tileset index, as part of the filename</param>
         public void Export(string outputPath, int index)
         {
-            File.WriteAllBytes(outputPath + @"\tileset" + index.ToString().PadLeft(3,'0') + ".bin", Memory);
+            File.WriteAllBytes(outputPath + @"\tileset" + index.ToString().PadLeft(3,'0') + ".bin", BitmapData);
         }
     }
 }

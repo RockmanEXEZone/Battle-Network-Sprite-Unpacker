@@ -50,6 +50,8 @@ namespace BNSA_Unpacker
         private static Boolean writeVerboseOutput = false;
         static void Main(string[] args)
         {
+            Console.BufferHeight = Int16.MaxValue - 1; // ***** Alters the BufferHeight *****
+
             //Command 
             var options = new Options();
             CommandLine.Parser parser = new CommandLine.Parser(s =>
