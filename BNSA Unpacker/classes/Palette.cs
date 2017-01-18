@@ -11,11 +11,22 @@ namespace BNSA_Unpacker.classes
     {
         public long Pointer;
         public byte[] Memory;
+        private string palettePath;
+
         public Palette(FileStream stream)
         {
             Pointer = stream.Position;
             Memory = new byte[0x20];
             stream.Read(Memory, 0, 0x20);
+        }
+
+        /// <summary>
+        /// Constructs a palette object from a palette binary file
+        /// </summary>
+        /// <param name="palettePath">Path to palette file</param>
+        public Palette(string palettePath)
+        {
+            Memory = File.ReadAllBytes(palettePath);
         }
 
         /// <summary>

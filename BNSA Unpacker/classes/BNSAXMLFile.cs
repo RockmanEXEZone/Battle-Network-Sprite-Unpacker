@@ -12,7 +12,7 @@ namespace BNSA_Unpacker.classes
     class BNSAXMLFile
     {
         private bool IsValid = false;
-
+        List<Palette> Palettes;
         /// <summary>
         /// Reads a project XML file and relinks all the parts for file rebuilding
         /// </summary>
@@ -82,6 +82,28 @@ namespace BNSA_Unpacker.classes
                 }
                 Console.WriteLine("OK - animation contains all direct binary references");
             }
+
+            //Read Palettes
+            Palettes = new List<Palette>();
+            int index = 0;
+            for (int i = 0; i < 16; i++) {
+                string palettePath = palettesBasepath + index.ToString().PadLeft(2, '0') + ".bin";
+                if (File.Exists(palettePath))
+                {
+                    Palette palette = new Palette(palettePath);
+                    Palettes.Add(palette);
+                } else
+                {
+                    break; //No more palettes
+                }
+
+                index++;
+            }
+            Console.WriteLine("Read " + Palettes.Count + " palettes");
+
+            //Read MiniAnims
+
+            //Read OAM Data
         }
     }
 }
