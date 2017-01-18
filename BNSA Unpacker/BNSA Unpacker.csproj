@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="classes\Animation.cs" />
     <Compile Include="classes\BNSAFile.cs" />
+    <Compile Include="classes\BNSAXMLFile.cs" />
     <Compile Include="classes\Frame.cs" />
     <Compile Include="classes\MiniAnim.cs" />
     <Compile Include="classes\MiniAnimGroup.cs" />

@@ -10,8 +10,10 @@ namespace BNSA_Unpacker.classes
 {
     class Animation
     {
+        public int Index;
         private int Pointer;
-        List<Frame> Frames;
+        public List<Frame> Frames;
+
         /// <summary>
         /// Animation Object, created from a pointer in the BNSA archive. The passed in stream will be used to load data. The stream position will be modified, so save it before you call this.
         /// </summary>
@@ -29,7 +31,7 @@ namespace BNSA_Unpacker.classes
             while (true)
             {
                 //Read Frame Until Stop or Loop at Pos + 0x12
-                Console.WriteLine("--Reading Frame " + frameindex+" at 0x"+stream.Position.ToString("X2"));
+                Console.WriteLine("--Reading Frame " + frameindex + " at 0x" + stream.Position.ToString("X2"));
                 Frame frame = new Frame(stream);
                 bnsa.ProbablyPaletteStartPointer = Math.Min(bnsa.ProbablyPaletteStartPointer, frame.PalettePointer); //Find first Palette Pointer
                 Frames.Add(frame);
@@ -38,6 +40,24 @@ namespace BNSA_Unpacker.classes
                     break;
                 }
                 frameindex++;
+            }
+        }
+
+        /// <summary>
+        /// Constructs an Animation object from an XML node
+        /// </summary>
+        /// <param name="animationNode">Node to generate from</param>
+        public Animation(XmlNode animationNode)
+        {
+            Index = Int32.Parse(animationNode.Attributes["index"].Value);
+            Frames = new List<Frame>();
+
+            XmlNodeList frameNodes = animationNode.SelectNodes("frame");
+            Console.WriteLine("Found " + frameNodes.Count + " frames in animation");
+            foreach (XmlNode node in frameNodes)
+            {
+                Frame f = new Frame(Index, node);
+                Frames.Add(f);
             }
         }
 
@@ -63,11 +83,12 @@ namespace BNSA_Unpacker.classes
         /// <param name="animationIndex">Index of this animation</param>
         public void Export(string outputDirectory, int animationIndex)
         {
+            Index = animationIndex;
             int i = 0;
             foreach (Frame frame in Frames)
             {
                 //Console.WriteLine("--Resolving Frame " + i + " references");
-                frame.Export(outputDirectory,animationIndex,i);
+                frame.Export(outputDirectory, animationIndex, i);
                 i++;
             }
         }

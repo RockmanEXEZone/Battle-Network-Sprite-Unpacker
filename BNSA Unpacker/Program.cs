@@ -21,8 +21,8 @@ namespace BNSA_Unpacker
         [Option('u', "unpack", MutuallyExclusiveSet = "operation", HelpText = "Unpacks the specified file. Can be used with -d to specify a specific destination folder.")]
         public string UnpackFile { get; set; }
 
-        [Option('r', "repack", HelpText = "Repacks the specified BNSA project into a BNSA file.")]
-        public string OutputFolder { get; set; }
+        [Option('r', "repack", HelpText = "Repacks the specified BNSA XML project into a BNSA file.")]
+        public string RepackFile { get; set; }
 
         [Option('d', "destination", HelpText = "Output destination. Requires -u to function.")]
         public string DestinationFolder { get; set; }
@@ -84,6 +84,15 @@ namespace BNSA_Unpacker
 
                     unpackBNSA(options.UnpackFile, outputFolder);
                 }
+                //Repack
+                if (options.RepackFile != null)
+                {
+                    if (!File.Exists(options.RepackFile))
+                    {
+                        endProgram(options.UnpackFile + " does not exist or could not be accessed.", 1);
+                    }
+                    repackBNSA(options.RepackFile);
+                }
             }
 
             //    if (args.Length != 2)
@@ -95,6 +104,12 @@ namespace BNSA_Unpacker
             //    Environment.Exit(1); //Return error code 1
             //}
             endProgram("No valid operations specified", 1);
+        }
+
+        private static void repackBNSA(string bnsaXmlFile)
+        {
+            BNSAXMLFile projectFile = new BNSAXMLFile(bnsaXmlFile);
+            endProgram("End of repack testing...", 0);
         }
 
         /// <summary>

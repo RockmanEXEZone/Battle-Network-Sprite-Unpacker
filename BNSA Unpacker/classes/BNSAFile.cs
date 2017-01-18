@@ -25,6 +25,11 @@ namespace BNSA_Unpacker.classes
         public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
 
         public Boolean ValidBNSA = false;
+
+        public static readonly string MiniAnimationXMLNodeName = "minianimgroup";
+        public static readonly string OAMDataListXMLNodeName = "oamdatalistindex";
+        public static readonly string TilesetXMLNodeName = "tileset";
+
         public BNSAFile(string path)
         {
             using (FileStream bnsaStream = File.OpenRead(path))

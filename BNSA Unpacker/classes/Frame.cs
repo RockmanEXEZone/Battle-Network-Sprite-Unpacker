@@ -10,20 +10,28 @@ namespace BNSA_Unpacker.classes
 {
     class Frame
     {
-        public long Pointer;
-        public int Index; //For XML
+        public int Index;
+        public byte[] Memory;
+
+        //Used when parsing a BNSA file
         public int TilesetPointer;
-        public int PalettePointer;
+        public int PalettePointer; //don't think this is useful really.
         public int MiniAnimationPointer;
         public int OAMDataListPointer;
+
+        //Used when parsing a BNSA XML file
+        public int TilesetIndex;
+        public int MiniAnimationIndex;
+        public int OAMDataListIndex;
+
+        //Convenience
         public byte FrameDelay;
         public byte Flags;
         public Boolean EndFrame = false;
         public Boolean Loops = false;
-        public byte[] Memory;
 
-
-        //public Palette ResolvedPalette; //Seems to always point to start of palette blocks (0x20)??
+        // Linked objects
+        public long Pointer;
         public Tileset ResolvedTileset;
         public MiniAnimGroup ResolvedMiniAnimGroup;
         public OAMDataList ResolvedOAMDataList;
@@ -53,6 +61,20 @@ namespace BNSA_Unpacker.classes
             Memory = new byte[20];
             stream.Read(Memory, 0, 20);
 
+        }
+
+        /// <summary>
+        /// Generates a frame object from a XML node
+        /// </summary>
+        /// <param name="node">XML Node to create a frame object from</param>
+        public Frame(int animationIndex, XmlNode node)
+        {
+            Index = Int32.Parse(node.Attributes["index"].Value);
+            TilesetIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.TilesetXMLNodeName).InnerText);
+            OAMDataListIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.OAMDataListXMLNodeName).InnerText);
+            MiniAnimationIndex = Int32.Parse(node.SelectSingleNode(BNSAFile.MiniAnimationXMLNodeName).InnerText);
+
+            Console.WriteLine("Read Index " + Index);
         }
 
         /// <summary>
@@ -154,11 +176,11 @@ namespace BNSA_Unpacker.classes
             node.Attributes.Append(attribute);
 
             //subnodes
-            XmlNode tilesetnode = xmlDoc.CreateElement("tileset");
+            XmlNode tilesetnode = xmlDoc.CreateElement(BNSAFile.TilesetXMLNodeName);
             tilesetnode.InnerText = ResolvedTileset.Index.ToString();
-            XmlNode oamlistindexnode = xmlDoc.CreateElement("oamdatalistindex");
+            XmlNode oamlistindexnode = xmlDoc.CreateElement(BNSAFile.OAMDataListXMLNodeName);
             oamlistindexnode.InnerText = ResolvedOAMDataList.Index.ToString();
-            XmlNode minianimgroupnode = xmlDoc.CreateElement("minianimgroup");
+            XmlNode minianimgroupnode = xmlDoc.CreateElement(BNSAFile.MiniAnimationXMLNodeName);
             minianimgroupnode.InnerText = ResolvedMiniAnimGroup.Index.ToString();
 
             node.AppendChild(tilesetnode);
