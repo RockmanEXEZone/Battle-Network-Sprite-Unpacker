@@ -22,6 +22,7 @@ namespace BNSA_Unpacker.classes
         public Boolean HorizontalFlip;
         public Boolean VerticalFlip;
         public Boolean EndOfListEntry = false;
+        private string v;
 
         /// <summary>
         /// Constructs a mini-frame object, part of a mini-animation.
@@ -122,6 +123,15 @@ namespace BNSA_Unpacker.classes
                     break;
             }
 
+        }
+
+        /// <summary>
+        /// Constructs an OAM Data List Entry from a binary file
+        /// </summary>
+        /// <param name="filePath">Binary File that represents the memory of this entry</param>
+        public OAMDataListEntry(string filePath)
+        {
+            Memory = File.ReadAllBytes(filePath);
         }
 
         /// <summary>

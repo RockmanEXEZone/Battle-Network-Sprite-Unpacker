@@ -13,6 +13,9 @@ namespace BNSA_Unpacker.classes
         public int Index;
         public List<OAMDataListEntry> OAMDataListEntries = new List<OAMDataListEntry>();
         public Boolean IsValid = true;
+        private string oamDataListsBasepath;
+        private int i;
+
         /// <summary>
         /// Constructs a list of mini-animations from a file stream, starting with the beginning pointer table.
         /// </summary>
@@ -64,6 +67,25 @@ namespace BNSA_Unpacker.classes
                     //Read the next 4 bytes in the pointer table as its a new pointer
                     stream.Seek(nextPosition, SeekOrigin.Begin);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Builds an OAMDataList from a base filename path with -X being the list entry index.
+        /// </summary>
+        /// <param name="oamDataListsBasepath">Path to find entries from</param>
+        /// <param name="i">List index to filter binary files with</param>
+        public OAMDataList(string oamDataListsBasepath, int i)
+        {
+            string baseOAMDataEntryName = oamDataListsBasepath + i + "-";
+            int nextEntryIndex = 0;
+            OAMDataListEntries = new List<OAMDataListEntry>();
+            while (File.Exists(baseOAMDataEntryName + nextEntryIndex + ".bin"))
+            {
+                //Console.WriteLine("Reading MiniFrame " + baseAnimName + nextFrameIndex + ".bin");
+                OAMDataListEntry oamDataListEntry = new OAMDataListEntry(baseOAMDataEntryName + nextEntryIndex + ".bin");
+                OAMDataListEntries.Add(oamDataListEntry);
+                nextEntryIndex++;
             }
         }
 

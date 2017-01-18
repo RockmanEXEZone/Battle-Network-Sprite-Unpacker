@@ -43,6 +43,14 @@ namespace BNSA_Unpacker.classes
             }
         }
 
+        /// <summary>
+        /// Empty Constructor for XML Parsing
+        /// </summary>
+        public MiniAnimGroup()
+        {
+            MiniAnimations = new List<MiniAnim>();
+        }
+
         internal void Export(string outputDirectory, int miniAnimGroupIndex)
         {
             this.Index = miniAnimGroupIndex;

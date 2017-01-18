@@ -54,6 +54,11 @@ namespace BNSA_Unpacker.classes
             }
         }
 
+        public MiniFrame(string filePath)
+        {
+            Memory = File.ReadAllBytes(filePath);
+        }
+
         /// <summary>
         /// Maps the OAM Data List Index to the proper data list object
         /// </summary>

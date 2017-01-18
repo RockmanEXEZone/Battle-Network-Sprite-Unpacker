@@ -109,6 +109,8 @@ namespace BNSA_Unpacker
         private static void repackBNSA(string bnsaXmlFile)
         {
             BNSAXMLFile projectFile = new BNSAXMLFile(bnsaXmlFile);
+            projectFile.ResolveReferences();
+            projectFile.RepackBNSA(Directory.GetParent(bnsaXmlFile).FullName+"\\sprite.bnsa");
             endProgram("End of repack testing...", 0);
         }
 
