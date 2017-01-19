@@ -40,16 +40,16 @@ namespace BNSA_Unpacker.classes
         /// Builds an OAMDataList from a base filename path with -X being the list entry index.
         /// </summary>
         /// <param name="oamDataListsBasepath">Path to find entries from</param>
-        /// <param name="i">List index to filter binary files with</param>
-        public OAMDataList(string oamDataListsBasepath, int i)
+        /// <param name="groupIndex">List index to filter binary files with</param>
+        public OAMDataList(string oamDataListsBasepath, int groupIndex, int listIndex)
         {
-            string baseOAMDataEntryName = oamDataListsBasepath + i + "-";
+            string baseOAMDataEntryName = oamDataListsBasepath + listIndex + "-";
             int nextEntryIndex = 0;
             OAMDataListEntries = new List<OAMDataListEntry>();
-            while (File.Exists(baseOAMDataEntryName + nextEntryIndex + ".bin"))
+            while (File.Exists(baseOAMDataEntryName + nextEntryIndex+".bin")) //group-list-firstentry.bin
             {
                 //Console.WriteLine("Reading MiniFrame " + baseAnimName + nextFrameIndex + ".bin");
-                OAMDataListEntry oamDataListEntry = new OAMDataListEntry(baseOAMDataEntryName + nextEntryIndex + ".bin");
+                OAMDataListEntry oamDataListEntry = new OAMDataListEntry(baseOAMDataEntryName + nextEntryIndex + ".bin", nextEntryIndex);
                 OAMDataListEntries.Add(oamDataListEntry);
                 nextEntryIndex++;
             }

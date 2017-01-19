@@ -9,7 +9,7 @@ namespace BNSA_Unpacker.classes
 {
     class OAMDataListEntry
     {
-
+        public int Index;
         public byte[] Memory;
         public long Pointer;
         public byte TileNumber;
@@ -22,7 +22,6 @@ namespace BNSA_Unpacker.classes
         public Boolean HorizontalFlip;
         public Boolean VerticalFlip;
         public Boolean EndOfListEntry = false;
-        private string v;
 
         /// <summary>
         /// Constructs an OAM Data List Entry from the 5-byte binary in a BNSA file
@@ -129,8 +128,10 @@ namespace BNSA_Unpacker.classes
         /// Constructs an OAM Data List Entry from a binary file
         /// </summary>
         /// <param name="filePath">Binary File that represents the memory of this entry</param>
-        public OAMDataListEntry(string filePath)
+        /// <param name="index">Index that this item appears in its list</param>
+        public OAMDataListEntry(string filePath, int index)
         {
+            Index = index;
             Memory = File.ReadAllBytes(filePath);
         }
 

@@ -12,6 +12,7 @@ namespace BNSA_Unpacker.classes
         public long Pointer;
         public int Index;
         public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
+
         public OAMDataListGroup(FileStream stream)
         {
             Pointer = stream.Position;
@@ -32,6 +33,26 @@ namespace BNSA_Unpacker.classes
                     //Read the next 4 bytes in the pointer table as its a new pointer
                     stream.Seek(nextPosition, SeekOrigin.Begin);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Constructs an OAM Data List Group from a group index.
+        /// </summary>
+        /// <param name="oamDataListsBasepath">Base path for the file</param>
+        /// <param name="groupIndex">First integer in filename</param>
+        public OAMDataListGroup(string oamDataListsBasepath, int groupIndex)
+        {
+            Index = groupIndex;
+            string baseOAMDataEntryName = oamDataListsBasepath + groupIndex + "-";
+            int nextListIndex = 0;
+            OAMDataLists = new List<OAMDataList>();
+            while (File.Exists(baseOAMDataEntryName + nextListIndex + "-0.bin")) //group-list-firstentry.bin
+            {
+                //Console.WriteLine("Reading MiniFrame " + baseAnimName + nextFrameIndex + ".bin");
+                OAMDataList oamDataListEntry = new OAMDataList(baseOAMDataEntryName, groupIndex, nextListIndex);
+                OAMDataLists.Add(oamDataListEntry);
+                nextListIndex++;
             }
         }
 

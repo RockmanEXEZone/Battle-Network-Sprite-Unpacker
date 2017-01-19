@@ -15,7 +15,7 @@ namespace BNSA_Unpacker.classes
         private string FilePath;
         List<Palette> Palettes;
         List<MiniAnimGroup> MiniAnimationGroups;
-        List<OAMDataList> OAMDataLists;
+        List<OAMDataListGroup> OAMDataListGroups;
         List<Animation> Animations;
         List<Tileset> Tilesets;
         /// <summary>
@@ -69,7 +69,7 @@ namespace BNSA_Unpacker.classes
                     }
 
                     //Verify OAM
-                    string oamPath = oamDataListsBasepath + f.OAMDataListIndex + "-0.bin";
+                    string oamPath = oamDataListsBasepath + f.OAMDataListIndex + "-0-0.bin";
                     if (!File.Exists(oamPath))
                     {
                         IsValid = false;
@@ -164,13 +164,13 @@ namespace BNSA_Unpacker.classes
                 fname = fname.Substring(0, dashIndex);
                 maxindex = Math.Max(maxindex, Int32.Parse(fname));
             }
-            Console.WriteLine("Found " + (maxindex + 1) + " OAM Data Lists");
-            OAMDataLists = new List<OAMDataList>();
+            Console.WriteLine("Found " + (maxindex + 1) + " OAM Data List Groups");
+            OAMDataListGroups = new List<OAMDataListGroup>();
             for (int i = 0; i <= maxindex; i++)
             {
-                Console.WriteLine("Parsing OAM Data List " + i);
-                OAMDataList list = new OAMDataList(oamDataListsBasepath, i);
-                OAMDataLists.Add(list);
+                Console.WriteLine("Parsing OAM Data List Group " + i);
+                OAMDataListGroup list = new OAMDataListGroup(oamDataListsBasepath, i);
+                OAMDataListGroups.Add(list);
             }
         }
 
@@ -295,12 +295,12 @@ namespace BNSA_Unpacker.classes
                 long objectListsStartPointer = stream.BaseStream.Position;
                 Console.WriteLine("OAMDataLists Block: 0x" + stream.BaseStream.Position.ToString("X2"));
 
-                foreach (OAMDataList list in OAMDataLists)
+                foreach (OAMDataListGroup list in OAMDataListGroups)
                 {
                     long groupPointerTablePointer = stream.BaseStream.Position;
                     //Write AnimGroup Pointer Table
-                    currentOffset = list.OAMDataListEntries.Count * 4; //End of pointer table offset
-                    foreach (OAMDataListEntry dataList in list.OAMDataListEntries)
+                    currentOffset = list.OAMDataLists.Count * 4; //End of pointer table offset
+                    foreach (OAMDataList dataList in list.OAMDataLists)
                     {
                         Console.WriteLine("Write OAM Data List Pointer 0x" + currentOffset.ToString("X2"));
                         stream.Write(currentOffset);
@@ -314,10 +314,14 @@ namespace BNSA_Unpacker.classes
 
                     Console.WriteLine("Writing OAMDataList to 0x" + stream.BaseStream.Position.ToString("X2"));
                     list.Pointer = stream.BaseStream.Position;
-                    foreach (OAMDataListEntry listEntry in list.OAMDataListEntries)
+                    foreach (OAMDataList dataList in list.OAMDataLists)
                     {
-                        Console.WriteLine("--Writing OAMDataListEntry to 0x" + stream.BaseStream.Position.ToString("X2"));
-                        stream.Write(listEntry.Memory);
+                        Console.WriteLine("--Writing OAMDataList " + dataList.Index + " to 0x" + stream.BaseStream.Position.ToString("X2"));
+                        foreach (OAMDataListEntry listEntry in dataList.OAMDataListEntries)
+                        {
+                            Console.WriteLine("----Writing OAMDataListEntry "+listEntry.Index+" to 0x" + stream.BaseStream.Position.ToString("X2"));
+                            stream.Write(listEntry.Memory);
+                        }
                     }
                     //List Terminator
                     stream.Write((byte)0xFF);
