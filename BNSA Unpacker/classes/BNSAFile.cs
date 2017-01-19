@@ -27,6 +27,7 @@ namespace BNSA_Unpacker.classes
         public static readonly string TilesetXMLNodeName = "tileset";
         public static readonly string FrameDelayXMLNodeName = "framedelay";
         public static readonly string LoopsXMLNodeName = "loops";
+        public static readonly string FlagsXMLNodeName = "flags";
 
         public BNSAFile(string path)
         {

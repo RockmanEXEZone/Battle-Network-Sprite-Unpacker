@@ -81,6 +81,12 @@ namespace BNSA_Unpacker.classes
             }
 
             Flags = 0;
+            XmlNode flagsNode = node.SelectSingleNode(BNSAFile.FlagsXMLNodeName);
+            if (flagsNode != null)
+            {
+                Flags = Byte.Parse(flagsNode.InnerText);
+            }
+
             if (EndFrame)
             {
                 Flags |= 0x80;
@@ -160,7 +166,7 @@ namespace BNSA_Unpacker.classes
             }
             else
             {
-                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim  0x" + MiniAnimationPointer.ToString("X2"));
+                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim 0x" + MiniAnimationPointer.ToString("X2"));
             }
 
             if (ResolvedOAMDataListGroup != null)
@@ -251,7 +257,7 @@ namespace BNSA_Unpacker.classes
             }
             else
             {
-                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim  0x" + MiniAnimationPointer.ToString("X2"));
+                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim 0x" + MiniAnimationPointer.ToString("X2"));
             }
 
             if (ResolvedOAMDataListGroup != null)
@@ -291,11 +297,19 @@ namespace BNSA_Unpacker.classes
             minianimgroupnode.InnerText = ResolvedMiniAnimGroup.Index.ToString();
             XmlNode framedelaynode = xmlDoc.CreateElement(BNSAFile.FrameDelayXMLNodeName);
             framedelaynode.InnerText = FrameDelay.ToString();
+        
+            XmlNode flagsnode = xmlDoc.CreateElement(BNSAFile.FlagsXMLNodeName);
+            flagsnode.InnerText = Flags.ToString();
 
             node.AppendChild(tilesetnode);
             node.AppendChild(oamlistindexnode);
             node.AppendChild(minianimgroupnode);
             node.AppendChild(framedelaynode);
+            if ((Flags&0x3F) != 0)
+            {
+                //Unusual flags
+                node.AppendChild(flagsnode);
+            }
 
             if (EndFrame)
             {
