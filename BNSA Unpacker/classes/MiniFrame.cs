@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BNSA_Unpacker.classes
 {
@@ -94,6 +90,20 @@ namespace BNSA_Unpacker.classes
         internal void Export(string outputPath, int miniAnimGroupIndex, int miniAnimIndex, int frameIndex)
         {
             File.WriteAllBytes(outputPath + @"\minianim" + miniAnimGroupIndex + "-" + miniAnimIndex + "-"+frameIndex+".bin", Memory);
+        }
+
+        internal void ResolveReferences(BNSAXMLFile parsedBNSA, Frame owningFrame)
+        {
+            Console.Write("----Resolving MiniFrame OAMList Index " + OAMDataListIndex);
+            ResolvedOAMDataList = owningFrame.ResolvedOAMDataListGroup.OAMDataLists[OAMDataListIndex];
+            if (ResolvedOAMDataList == null)
+            {
+                Console.WriteLine("... Failed to resolve: " + OAMDataListIndex);
+            }
+            else
+            {
+                Console.WriteLine("... OK");
+            }
         }
     }
 }

@@ -2,22 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Linq;
 
 namespace BNSA_Unpacker.classes
 {
     class BNSAXMLFile
     {
-        private bool IsValid = false;
+        public bool IsValid = false;
         private string FilePath;
-        List<Palette> Palettes;
-        List<MiniAnimGroup> MiniAnimationGroups;
-        List<OAMDataListGroup> OAMDataListGroups;
-        List<Animation> Animations;
-        List<Tileset> Tilesets;
+        public List<Palette> Palettes;
+        public List<MiniAnimGroup> MiniAnimationGroups;
+        public List<OAMDataListGroup> OAMDataListGroups;
+        public List<Animation> Animations;
+        public List<Tileset> Tilesets;
         /// <summary>
         /// Reads a project XML file and relinks all the parts for file rebuilding
         /// </summary>
@@ -138,15 +135,15 @@ namespace BNSA_Unpacker.classes
             }
             Console.WriteLine("Found " + (maxindex + 1) + " mini animations");
             MiniAnimationGroups = new List<MiniAnimGroup>();
-            for (int i = 0; i <= maxindex; i++)
+            for (index = 0; index <= maxindex; index++)
             {
                 int subindex = 0;
-                Console.WriteLine("Parsing Group " + i);
-                MiniAnimGroup group = new MiniAnimGroup();
+                Console.WriteLine("Parsing Group " + index);
+                MiniAnimGroup group = new MiniAnimGroup(index);
                 while (File.Exists(miniAnimsBasepath + maxindex + "-" + subindex + "-0.bin"))
                 {
                     //MiniAnimation List
-                    MiniAnim animation = new MiniAnim(miniAnimsBasepath, i, subindex);
+                    MiniAnim animation = new MiniAnim(miniAnimsBasepath, index, subindex);
                     group.MiniAnimations.Add(animation);
                     subindex++;
                 }
@@ -172,6 +169,7 @@ namespace BNSA_Unpacker.classes
                 OAMDataListGroup list = new OAMDataListGroup(oamDataListsBasepath, i);
                 OAMDataListGroups.Add(list);
             }
+            IsValid = true;
         }
 
         /// <summary>
@@ -179,7 +177,22 @@ namespace BNSA_Unpacker.classes
         /// </summary>
         public void ResolveReferences()
         {
+            int i = 0;
+            foreach (Animation animation in Animations)
+            {
+                Console.WriteLine("Resolving References in Animation " + i);
+                animation.ResolveReferences(this);
+                i++;
+            }
 
+            //minianims are resolved in frame
+            //i = 0;
+            //foreach (MiniAnimGroup miniAnimGroup in MiniAnimGroups)
+            //{
+            //    Console.WriteLine("Resolving References in MiniAnimation " + i);
+            //    miniAnimGroup.ResolveReferences(this);
+            //    i++;
+            //}
         }
 
         /// <summary>
@@ -196,6 +209,8 @@ namespace BNSA_Unpacker.classes
             {
                 FileStream fstream = new FileStream(destinationFile, FileMode.Create);
                 BinaryWriter stream = new BinaryWriter(fstream);
+
+                //PASS 1 - WRITE DATA TO FILE
                 //Write Header
                 string tilesetBasepath = Directory.GetParent(FilePath).FullName + "\\tilesets\\";
 
@@ -223,9 +238,9 @@ namespace BNSA_Unpacker.classes
                 foreach (Animation anim in Animations)
                 {
                     Console.WriteLine("Writing Animation to 0x" + stream.BaseStream.Position.ToString("X2"));
-
                     foreach (Frame frame in anim.Frames)
                     {
+                        frame.Pointer = stream.BaseStream.Position;
                         Console.WriteLine("--Writing Frame to 0x" + stream.BaseStream.Position.ToString("X2"));
                         stream.Write(frame.GenerateMemoryNoPointers(stream));
                     }
@@ -254,6 +269,7 @@ namespace BNSA_Unpacker.classes
                 long miniAnimsStartPointer = stream.BaseStream.Position;
                 foreach (MiniAnimGroup group in MiniAnimationGroups)
                 {
+                    group.Pointer = stream.BaseStream.Position;
                     long groupPointerTablePointer = stream.BaseStream.Position;
                     //Write AnimGroup Pointer Table
                     currentOffset = group.MiniAnimations.Count * 4; //End of pointer table offset
@@ -270,12 +286,13 @@ namespace BNSA_Unpacker.classes
                     }
 
                     Console.WriteLine("Writing MiniAnimationGroup to 0x" + stream.BaseStream.Position.ToString("X2"));
-                    group.Pointer = stream.BaseStream.Position;
                     foreach (MiniAnim miniAnim in group.MiniAnimations)
                     {
+                        miniAnim.Pointer = stream.BaseStream.Position;
                         Console.WriteLine("--Writing MiniAnimation to 0x" + stream.BaseStream.Position.ToString("X2"));
                         foreach (MiniFrame mf in miniAnim.MiniFrames)
                         {
+                            mf.Pointer = stream.BaseStream.Position;
                             stream.Write(mf.Memory);
                         }
                         //AnimTerminator
@@ -297,29 +314,28 @@ namespace BNSA_Unpacker.classes
 
                 foreach (OAMDataListGroup list in OAMDataListGroups)
                 {
-                    long groupPointerTablePointer = stream.BaseStream.Position;
-                    //Write AnimGroup Pointer Table
+                    list.Pointer = stream.BaseStream.Position;
+                    //Write OAMDataListGroup Pointer Table
                     currentOffset = list.OAMDataLists.Count * 4; //End of pointer table offset
                     foreach (OAMDataList dataList in list.OAMDataLists)
                     {
                         Console.WriteLine("Write OAM Data List Pointer 0x" + currentOffset.ToString("X2"));
                         stream.Write(currentOffset);
-                        //currentOffset += dataList.Count * 0x5 + 5;
                         currentOffset += 1; //Round Up padding calc
-                        while ((groupPointerTablePointer + currentOffset) % 4 != 0)
+                        while ((list.Pointer + currentOffset) % 4 != 0)
                         {
                             currentOffset++;
                         }
                     }
 
                     Console.WriteLine("Writing OAMDataList to 0x" + stream.BaseStream.Position.ToString("X2"));
-                    list.Pointer = stream.BaseStream.Position;
                     foreach (OAMDataList dataList in list.OAMDataLists)
                     {
+                        dataList.Pointer = stream.BaseStream.Position;
                         Console.WriteLine("--Writing OAMDataList " + dataList.Index + " to 0x" + stream.BaseStream.Position.ToString("X2"));
                         foreach (OAMDataListEntry listEntry in dataList.OAMDataListEntries)
                         {
-                            Console.WriteLine("----Writing OAMDataListEntry "+listEntry.Index+" to 0x" + stream.BaseStream.Position.ToString("X2"));
+                            Console.WriteLine("----Writing OAMDataListEntry " + listEntry.Index + " to 0x" + stream.BaseStream.Position.ToString("X2"));
                             stream.Write(listEntry.Memory);
                         }
                     }
@@ -335,8 +351,30 @@ namespace BNSA_Unpacker.classes
                     while (stream.BaseStream.Position % 4 != 0)
                     {
                         stream.Write((byte)0x00);
+                    }
+                }
+
+                //PASS 2 - WRITE POINTERS
+                Console.WriteLine("==================");
+                int i = 0;
+                foreach (Animation anim in Animations)
+                {
+                    Console.WriteLine("Writing Pointers for Animation " + i);
+                    foreach (Frame f in anim.Frames)
+                    {
+                        stream.Seek((int)f.Pointer, SeekOrigin.Begin);
+                        Console.WriteLine("--Writing Pointers for frame at 0x" + stream.BaseStream.Position.ToString("X2"));
+                        stream.Write((int)f.ResolvedTileset.Pointer - 0x4); //0x4 is start of pointer table
+                        stream.Write((int)palettesPointer - 0x4);
+                        stream.Write((int)f.ResolvedMiniAnimGroup.Pointer - 0x4);
+                        stream.Write((int)f.ResolvedOAMDataListGroup.Pointer - 0x4);
+                        Console.WriteLine("----TilesetPtr 0x" + ((int)f.ResolvedTileset.Pointer - 0x4).ToString("X8"));
+                        Console.WriteLine("----PalettePtr 0x" + ((int)palettesPointer - 0x4).ToString("X8"));
+                        Console.WriteLine("----MiniAniPtr 0x" + ((int)f.ResolvedMiniAnimGroup.Pointer - 0x4).ToString("X8"));
+                        Console.WriteLine("----OAMDataPtr 0x" + ((int)f.ResolvedOAMDataListGroup.Pointer - 0x4).ToString("X8"));
 
                     }
+                    i++;
                 }
 
                 stream.Close();

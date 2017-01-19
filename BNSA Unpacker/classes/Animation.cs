@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace BNSA_Unpacker.classes
@@ -66,6 +63,17 @@ namespace BNSA_Unpacker.classes
         /// This calls ResolveReferences() on each frame in the animation
         /// </summary>
         internal void ResolveReferences(BNSAFile parsedBNSA)
+        {
+            int i = 0;
+            foreach (Frame frame in Frames)
+            {
+                Console.WriteLine("--Resolving Frame " + i + " references");
+                frame.ResolveReferences(parsedBNSA);
+                i++;
+            }
+        }
+
+        internal void ResolveReferences(BNSAXMLFile parsedBNSA)
         {
             int i = 0;
             foreach (Frame frame in Frames)

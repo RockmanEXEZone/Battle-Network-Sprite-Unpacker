@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace BNSA_Unpacker.classes
@@ -95,6 +91,97 @@ namespace BNSA_Unpacker.classes
             }
 
             Console.WriteLine("Read Index " + Index);
+        }
+
+        /// <summary>
+        /// Converts pointers to references to other parsed BNSA objects. This allows us to export references rather than hard coded values for easy recompilation and editing of the outputted XML.
+        /// </summary>
+        /// <param name="parsedBNSA">BNSA XML File that has been parsed</param>
+        public void ResolveReferences(BNSAXMLFile parsedBNSA)
+        {
+            //foreach (Palette palette in parsedBNSA.Palettes)
+            //{
+            //    if (palette.Pointer == PalettePointer)
+            //    {
+            //        ResolvedPalette = palette;
+            //        break;
+            //    }
+            //}
+
+            foreach (Tileset tileset in parsedBNSA.Tilesets)
+            {
+                if (tileset.Index == TilesetIndex)
+                {
+                    ResolvedTileset = tileset;
+                    break;
+                }
+            }
+            foreach (OAMDataListGroup oamDataListGroup in parsedBNSA.OAMDataListGroups)
+            {
+                if (oamDataListGroup.Index == OAMDataListIndex)
+                {
+                    ResolvedOAMDataListGroup = oamDataListGroup;
+                    break;
+                }
+            }
+            foreach (MiniAnimGroup minianimgroup in parsedBNSA.MiniAnimationGroups)
+            {
+                if (minianimgroup.Index == MiniAnimationIndex)
+                {
+                    ResolvedMiniAnimGroup = minianimgroup;
+                    ResolvedMiniAnimGroup.ResolveReferences(parsedBNSA, this);
+                    break;
+                }
+            }
+
+
+
+            //if (ResolvedPalette != null)
+            //{
+            //    Console.WriteLine("----Resolved Palette Reference");
+            //}
+            //else
+            //{
+            //    Console.WriteLine("----/!\\ Failed to Resolve Palette: 0x"+PalettePointer.ToString("X2"));
+            //}
+
+            if (ResolvedTileset != null)
+            {
+                Console.WriteLine("----Resolved Tileset Reference");
+            }
+            else
+            {
+                Console.WriteLine("----/!\\ Failed to Resolve Tileset Pointer 0x" + TilesetPointer.ToString("X2"));
+            }
+
+            if (ResolvedMiniAnimGroup != null)
+            {
+                Console.WriteLine("----Resolved MiniAnim Reference");
+            }
+            else
+            {
+                Console.WriteLine("----/!\\ Failed to Resolve MiniAnim  0x" + MiniAnimationPointer.ToString("X2"));
+            }
+
+            if (ResolvedOAMDataListGroup != null)
+            {
+                Console.WriteLine("----Resolved OAM Data List Reference");
+            }
+            else
+            {
+                Console.WriteLine("----/!\\ Failed to Resolve OAM Data List 0x" + OAMDataListPointer.ToString("X2"));
+            }
+
+
+
+            //foreach (MiniAnim tileset in parsedBNSA.MiniAnimGroups)
+            //{
+            //    if (minianim.Pointer == TilesetPointer)
+            //    {
+            //        ResolvedMiniAnim = tileset;
+            //        break;
+            //    }
+            //}
         }
 
         /// <summary>

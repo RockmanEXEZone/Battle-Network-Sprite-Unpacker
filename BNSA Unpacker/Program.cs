@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Xml;
-using System.Xml.Serialization;
 using CommandLine;
 using CommandLine.Text;
 using System.Diagnostics;
@@ -111,8 +108,14 @@ namespace BNSA_Unpacker
         private static void repackBNSA(string bnsaXmlFile)
         {
             BNSAXMLFile projectFile = new BNSAXMLFile(bnsaXmlFile);
-            projectFile.ResolveReferences();
-            projectFile.RepackBNSA(Directory.GetParent(bnsaXmlFile).FullName+"\\sprite.bnsa");
+            if (projectFile.IsValid)
+            {
+                projectFile.ResolveReferences();
+                projectFile.RepackBNSA(Directory.GetParent(bnsaXmlFile).FullName + "\\sprite.bnsa");
+            } else
+            {
+                Console.WriteLine("Project file is invalid!");
+            }
             endProgram("End of repack testing...", 0);
         }
 

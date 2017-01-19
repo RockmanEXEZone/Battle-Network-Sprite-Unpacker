@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BNSA_Unpacker.classes
 {
@@ -44,10 +41,12 @@ namespace BNSA_Unpacker.classes
         }
 
         /// <summary>
-        /// Empty Constructor for XML Parsing
+        /// Creates a blank MiniAnimGroup with the specified index
         /// </summary>
-        public MiniAnimGroup()
+        /// <param name="index">Index of this MiniAnimGroup</param>
+        public MiniAnimGroup(int index)
         {
+            Index = index;
             MiniAnimations = new List<MiniAnim>();
         }
 
@@ -65,6 +64,17 @@ namespace BNSA_Unpacker.classes
         }
 
         internal void ResolveReferences(BNSAFile parsedBNSA, Frame owningFrame)
+        {
+            int i = 0;
+            foreach (MiniAnim miniAnim in MiniAnimations)
+            {
+                //Console.WriteLine("--Resolving Frame " + i + " references");
+                miniAnim.ResolveReferences(parsedBNSA, owningFrame);
+                i++;
+            }
+        }
+
+        internal void ResolveReferences(BNSAXMLFile parsedBNSA, Frame owningFrame)
         {
             int i = 0;
             foreach (MiniAnim miniAnim in MiniAnimations)
