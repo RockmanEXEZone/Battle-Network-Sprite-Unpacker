@@ -77,7 +77,6 @@ namespace Sprite_Viewer_GUI___WPF
             paletteButtons.Add(paletteColor14Button);
             paletteButtons.Add(paletteColor15Button);
             paletteButtons.Add(paletteColor16Button);
-            RenderOptions.SetBitmapScalingMode(frameImage, BitmapScalingMode.NearestNeighbor);
             spriteAnimatorWorker = new BackgroundWorker();
             spriteAnimatorWorker.DoWork += SpriteAnimatorWork;
             spriteAnimatorWorker.WorkerSupportsCancellation = true;
@@ -125,6 +124,7 @@ namespace Sprite_Viewer_GUI___WPF
         private void OpenROM(string open)
         {
             frameImage.Stretch = Stretch.None;
+            RenderOptions.SetBitmapScalingMode(frameImage, BitmapScalingMode.NearestNeighbor);
             romSpritePointersListbox.ItemsSource = new List<String>(); //clear
             ROM = File.ReadAllBytes(open);
             string ROMID = GetROMID(ROM);
