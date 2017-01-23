@@ -4,14 +4,15 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class OAMDataListGroup
+    public class OAMDataListGroup
     {
         public long Pointer;
         public int Index;
         public List<OAMDataList> OAMDataLists = new List<OAMDataList>();
 
-        public OAMDataListGroup(FileStream stream)
+        public OAMDataListGroup(Stream stream, int index)
         {
+            Index = index;
             Pointer = stream.Position;
             Console.WriteLine("--Reading OAM Data List Pointer Table (Group) at 0x" + stream.Position.ToString("X2"));
 

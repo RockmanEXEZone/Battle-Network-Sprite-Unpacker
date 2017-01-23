@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
-    class Animation
+    public class Animation
     {
         public int Index;
         private int Pointer;
@@ -16,8 +16,8 @@ namespace BNSA_Unpacker.classes
         /// </summary>
         /// <param name="bnsa">BNSA Object. Will be used so the probably palette pointer can be updated.</param>
         /// <param name="ptr">Pointer (from start of file) to the animation data.</param>
-        /// <param name="stream">File stream to read read from</param>
-        public Animation(BNSAFile bnsa, int ptr, FileStream stream)
+        /// <param name="stream">Stream to read read from</param>
+        public Animation(BNSAFile bnsa, int ptr, Stream stream)
         {
             Pointer = ptr;
             Pointer += 4; //Skip Header

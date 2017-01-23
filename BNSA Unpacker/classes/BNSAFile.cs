@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
-    class BNSAFile
+    public class BNSAFile
     {
         public long TilesetStartPointer;
         public long PaletteStartPointer;
@@ -29,76 +29,109 @@ namespace BNSA_Unpacker.classes
         public static readonly string LoopsXMLNodeName = "loops";
         public static readonly string FlagsXMLNodeName = "flags";
 
+        /// <summary>
+        /// Loads a BNSA file, already exported from a ROM (decompressed only for now).
+        /// </summary>
+        /// <param name="path"></param>
         public BNSAFile(string path)
         {
-            using (FileStream bnsaStream = File.OpenRead(path))
+            FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            loadBNSA(stream);
+        }
+
+        /// <summary>
+        /// Loads BNSA archive from a byte array, likely copied directly from a ROM.
+        /// </summary>
+        /// <param name="bnsaData"></param>
+        public BNSAFile(byte[] bnsaData)
+        {
+            MemoryStream stream = new MemoryStream(bnsaData);
+            loadBNSA(stream);
+        }
+
+        private void loadBNSA(Stream bnsaStream)
+        {
+
+            //HEADER
+            LargestTileset = bnsaStream.ReadByte();
+            //Magic Number Test
+            if (bnsaStream.ReadByte() != 0 || bnsaStream.ReadByte() != 1) //0x1 and 0x2 positions
             {
-                //HEADER
-                LargestTileset = bnsaStream.ReadByte();
-                //Magic Number Test
-                if (bnsaStream.ReadByte() != 0 || bnsaStream.ReadByte() != 1) //0x1 and 0x2 positions
+                //Invalid Magic Number
+                ValidBNSA = false;
+                return;
+            }
+            AnimationCount = bnsaStream.ReadByte();
+            Console.WriteLine("Number of Animations: " + AnimationCount);
+            //Read Animation Pointers
+            for (int i = 0; i < AnimationCount; i++)
+            {
+                int animationPointer = ReadIntegerFromStream(bnsaStream);
+                long nextPosition = bnsaStream.Position;
+                Animation animation = new Animation(this, animationPointer, bnsaStream);
+                Animations.Add(animation);
+                if (i < AnimationCount - 1)
                 {
-                    //Invalid Magic Number
-                    ValidBNSA = false;
-                    return;
+                    bnsaStream.Seek(nextPosition, SeekOrigin.Begin); //reset position to next pointer
                 }
-                AnimationCount = bnsaStream.ReadByte();
-                Console.WriteLine("Number of Animations: " + AnimationCount);
-                //Read Animation Pointers
-                for (int i = 0; i < AnimationCount; i++)
-                {
-                    int animationPointer = ReadIntegerFromStream(bnsaStream);
-                    long nextPosition = bnsaStream.Position;
-                    Animation animation = new Animation(this, animationPointer, bnsaStream);
-                    Animations.Add(animation);
-                    if (i < AnimationCount - 1)
-                    {
-                        bnsaStream.Seek(nextPosition, SeekOrigin.Begin); //reset position to next pointer
-                    }
-                }
+            }
 
+            //Read Tilesets
+            TilesetStartPointer = bnsaStream.Position;
+            Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X2"));
+            int index = 0;
+            while (bnsaStream.Position < ProbablyPaletteStartPointer)
+            {
                 //Read Tilesets
-                TilesetStartPointer = bnsaStream.Position;
-                Console.WriteLine("Reading Tilesets, starting at 0x" + TilesetStartPointer.ToString("X2"));
-                int index = 0;
-                while (bnsaStream.Position < ProbablyPaletteStartPointer)
-                {
-                    //Read Tilesets
-                    Tileset ts = new Tileset(bnsaStream, index);
-                    Tilesets.Add(ts); //Might need some extra checking...
-                    index++;
-                }
+                Tileset ts = new Tileset(bnsaStream, index);
+                Tilesets.Add(ts); //Might need some extra checking...
+                index++;
+            }
 
-                //Read Palettes
-                PaletteStartPointer = bnsaStream.Position;
-                Console.WriteLine("Found start of Palettes at 0x" + PaletteStartPointer.ToString("X2"));
-                if (ReadIntegerFromStream(bnsaStream) == 0x20)
+            //Read Palettes
+            PaletteStartPointer = bnsaStream.Position;
+            Console.WriteLine("Found start of Palettes at 0x" + PaletteStartPointer.ToString("X2"));
+            if (ReadIntegerFromStream(bnsaStream) == 0x20)
+            {
+                while (true)
                 {
-                    while (true)
+                    long pos = bnsaStream.Position;
+                    //Verify next item is a palette and not a minianim
+                    int minianimCheckPtr1 = ReadIntegerFromStream(bnsaStream);
+                    if (minianimCheckPtr1 % 4 == 0)
                     {
-                        long pos = bnsaStream.Position;
+                        //All pointers in the minianim table are lined up on a 4-byte boundary.
+                        //Indexing starts at 0. Each pointer is 4 bytes, so the first one will have to point to a 4-point value
 
-                        //Verify next item is a palette and not a minianim
-                        int minianimCheckPtr1 = ReadIntegerFromStream(bnsaStream);
-                        if (minianimCheckPtr1 % 4 == 0)
+                        //could be an pointer to 1-frame minianim, maybe... 
+                        if (minianimCheckPtr1 == 4)
                         {
-                            //All pointers in the minianim table are lined up on a 4-byte boundary.
-                            //Indexing starts at 0. Each pointer is 4 bytes, so the first one will have to point to a 4-point value
-
-                            //could be an pointer to 1-frame minianim, maybe... 
-                            if (minianimCheckPtr1 == 4)
+                            long subpos = bnsaStream.Position;
+                            //Check for 1 pointer minianim signature
+                            if (bnsaStream.ReadByte() == 0x0 && bnsaStream.ReadByte() == 0x01 && bnsaStream.ReadByte() == 0x80)
                             {
-                                //Check for 1 pointer minianim signature
-                                if (bnsaStream.ReadByte() == 0x0 && bnsaStream.ReadByte() == 0x01 && bnsaStream.ReadByte() == 0x80)
-                                {
-                                    bnsaStream.Seek(pos, SeekOrigin.Begin);
-                                    break; //Not a palette. Next Item is a single-frame minianim group. End of Palette Block
-                                }
+                                bnsaStream.Seek(pos, SeekOrigin.Begin);
+                                break; //Not a palette. Next Item is a single-frame minianim group. End of Palette Block
                             }
+                            else
+                            {
+                                bnsaStream.Seek(subpos, SeekOrigin.Begin); //rewind and continue check
+                            }
+                        }
 
-                            //Could be a multi-miniframe mugshot, let's check the amount of pointers and the values.
-                            int numberOfMiniAnimsInGroup = minianimCheckPtr1 / 4; //Pointer will go to first value after pointer table, so divide by num bytes in a pointer
+                        //Could be a multi-miniframe mugshot, let's check the amount of pointers and the values.
+                        Boolean determinedDataIsPalette = false;
+                        int numberOfMiniAnimsInGroup = minianimCheckPtr1 / 4; //Pointer will go to first value after pointer table, so divide by num bytes in a pointer
+                        if (minianimCheckPtr1 == 0 || numberOfMiniAnimsInGroup * 4 > bnsaStream.Length - pos)
+                        {
+                            //couldn't possbibly be a minianim. Read it as a palette.
+                            determinedDataIsPalette = true;
+                        }
+
+                        if (!determinedDataIsPalette)
+                        {
                             int previousPointerToCheckAgainst = minianimCheckPtr1;
+
                             Boolean validMiniAnimPointerData = true;
                             for (int i = 1; i < numberOfMiniAnimsInGroup; i++)
                             {
@@ -115,82 +148,92 @@ namespace BNSA_Unpacker.classes
                                 bnsaStream.Seek(pos, SeekOrigin.Begin);
                                 break;
                             }
-
-                        }
-                        bnsaStream.Seek(pos, SeekOrigin.Begin);
-                        Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X2"));
-                        Palette palette = new Palette(bnsaStream);
-                        Palettes.Add(palette);
-                        //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X2"));
-
+                        } //end of check for readAsPalette
                     }
-                }//} else
-                 //{
-                 //    Console.WriteLine("Palettes should start here, but we didn't find 0x00000020! (At position  0x" + PaletteStartPointer.ToString("X2") + ")");
-                 //    return;
-                 //}
+                    bnsaStream.Seek(pos, SeekOrigin.Begin);
+                    Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X2"));
+                    Palette palette = new Palette(bnsaStream);
+                    Palettes.Add(palette);
+                    //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X2"));
 
-                //Read Mini-Animations
-                Console.WriteLine("Reading MiniAnim Data at 0x" + bnsaStream.Position.ToString("X2"));
-                while (true)
+                }
+            }//} else
+             //{
+             //    Console.WriteLine("Palettes should start here, but we didn't find 0x00000020! (At position  0x" + PaletteStartPointer.ToString("X2") + ")");
+             //    return;
+             //}
+
+            //Read Mini-Animations
+            Console.WriteLine("Reading MiniAnim Data at 0x" + bnsaStream.Position.ToString("X2"));
+            while (true)
+            {
+                //Validate next data is a mini animation.
+                long groupStartPos = bnsaStream.Position;
+                MiniAnimGroup group = new MiniAnimGroup(bnsaStream);
+                if (!group.IsValid)
                 {
-                    //Validate next data is a mini animation.
-                    long groupStartPos = bnsaStream.Position;
-                    MiniAnimGroup group = new MiniAnimGroup(bnsaStream);
-                    if (!group.IsValid)
-                    {
-                        //End of Mini-Anims
-                        bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
-                        break;
-                    }
-                    MiniAnimGroups.Add(group);
-                    //Round up to the next 4 byte boundary
+                    //End of Mini-Anims
+                    bnsaStream.Seek(groupStartPos, SeekOrigin.Begin);
+                    break;
+                }
+                MiniAnimGroups.Add(group);
+                //Round up to the next 4 byte boundary
+                bnsaStream.ReadByte(); //pos++
+                while (bnsaStream.Position % 4 != 0)
+                {
+                    bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
+                }
+            }
+
+
+
+            //Read OAM Data Block Lists
+            Console.WriteLine("Reading OAM Data Blocks at 0x" + bnsaStream.Position.ToString("X2"));
+            int oindex = 0;
+            while (bnsaStream.Position < bnsaStream.Length)
+            {
+                byte firstByte = (byte)bnsaStream.ReadByte();
+                bnsaStream.Seek(-1, SeekOrigin.Current);
+                if (firstByte == 0xFF)
+                {
+                    break; //End marker.
+                }
+                OAMDataListGroup oamListBlock = new OAMDataListGroup(bnsaStream, oindex);
+                OAMDataListGroups.Add(oamListBlock);
+                //Round up to the next 4 byte boundary (if possible)
+                if (bnsaStream.Position < bnsaStream.Length)
+                {
                     bnsaStream.ReadByte(); //pos++
-                    while (bnsaStream.Position % 4 != 0)
+                    while (bnsaStream.Position % 4 != 0 && bnsaStream.Position < bnsaStream.Length)
                     {
                         bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
                     }
                 }
-
-
-
-                //Read OAM Data Block Lists
-                Console.WriteLine("Reading OAM Data Blocks at 0x" + bnsaStream.Position.ToString("X2"));
-                while (bnsaStream.Position < bnsaStream.Length)
-                {
-                    OAMDataListGroup oamListBlock = new OAMDataListGroup(bnsaStream);
-                    OAMDataListGroups.Add(oamListBlock);
-                    //Round up to the next 4 byte boundary (if possible)
-                    if (bnsaStream.Position < bnsaStream.Length)
-                    {
-                        bnsaStream.ReadByte(); //pos++
-                        while (bnsaStream.Position % 4 != 0)
-                        {
-                            bnsaStream.ReadByte(); //Official game padding. Since we are assuming these are all official, when repacking we should also follow this padding rule.
-                        }
-                    } else
-                    {
-                        Console.WriteLine("Not rounding up boundary because at or past end of stream.");
-                    }
-                }
-
-                if (bnsaStream.Position != bnsaStream.Length)
-                {
-                    Console.WriteLine("...Nothing left to parse but we aren't at the end of the file!");
-                }
                 else
                 {
-                    Console.WriteLine("...Reached end of the file.");
+                    Console.WriteLine("Not rounding up boundary because at or past end of stream.");
                 }
+                oindex++;
+            }
+
+            if (bnsaStream.Position != bnsaStream.Length)
+            {
+                Console.WriteLine("...Nothing left to parse but we aren't at the end of the file!");
+            }
+            else
+            {
+                Console.WriteLine("...Reached end of the file.");
             }
         }
+
+
 
         /// <summary>
         /// Reads a 32-bit integer value from the stream, advancing it 4 bytes forward.
         /// </summary>
         /// <param name="stream">Stream to read</param>
         /// <returns>Integer</returns>
-        public static int ReadIntegerFromStream(FileStream stream)
+        public static int ReadIntegerFromStream(Stream stream)
         {
             byte[] pointer = new byte[4]; //32-bit pointer
             stream.Read(pointer, 0, 4);

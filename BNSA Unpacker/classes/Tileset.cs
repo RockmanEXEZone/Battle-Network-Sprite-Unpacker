@@ -3,7 +3,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class Tileset
+    public class Tileset
     {
         public long Pointer;
         public int Index;
@@ -11,7 +11,7 @@ namespace BNSA_Unpacker.classes
         public byte[] BitmapData;
         public byte[] Memory;
 
-        public Tileset(FileStream stream, int index)
+        public Tileset(Stream stream, int index)
         {
             Pointer = stream.Position;
             Index = index;

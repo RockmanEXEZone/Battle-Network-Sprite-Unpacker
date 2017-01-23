@@ -4,7 +4,7 @@ using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
-    class Frame
+    public class Frame
     {
         public int Index;
         public byte[] Memory;
@@ -36,7 +36,7 @@ namespace BNSA_Unpacker.classes
         /// Creates a new frame from the next 0x20 bytes of the given stream.
         /// </summary>
         /// <param name="stream">Stream to read a frame from</param>
-        public Frame(FileStream stream)
+        public Frame(Stream stream)
         {
             Pointer = stream.Position;
             TilesetPointer = BNSAFile.ReadIntegerFromStream(stream) + 0x4;
@@ -158,6 +158,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve Tileset Pointer 0x" + TilesetPointer.ToString("X2"));
+                throw new Exception("Failed to resolve tileset object.");
             }
 
             if (ResolvedMiniAnimGroup != null)
@@ -167,6 +168,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve MiniAnim 0x" + MiniAnimationPointer.ToString("X2"));
+                throw new Exception("Failed to resolve mini-animation object.");
             }
 
             if (ResolvedOAMDataListGroup != null)
@@ -176,6 +178,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve OAM Data List 0x" + OAMDataListPointer.ToString("X2"));
+                throw new Exception("Failed to resolve OAM Data list group object.");
             }
 
 
@@ -249,6 +252,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve Tileset Pointer 0x"+TilesetPointer.ToString("X2"));
+                throw new Exception("Failed to resolve mini-animation object.");
             }
 
             if (ResolvedMiniAnimGroup != null)
@@ -258,6 +262,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve MiniAnim 0x" + MiniAnimationPointer.ToString("X2"));
+                throw new Exception("Failed to resolve mini-animation object.");
             }
 
             if (ResolvedOAMDataListGroup != null)
@@ -267,6 +272,7 @@ namespace BNSA_Unpacker.classes
             else
             {
                 Console.WriteLine("----/!\\ Failed to Resolve OAM Data List 0x" + OAMDataListPointer.ToString("X2"));
+                throw new Exception("Failed to resolve mini-animation object.");
             }
 
 

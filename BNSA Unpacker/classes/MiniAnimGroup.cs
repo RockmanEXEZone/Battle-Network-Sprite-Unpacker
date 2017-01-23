@@ -4,7 +4,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class MiniAnimGroup
+    public class MiniAnimGroup
     {
         public long Pointer;
         public int Index; //For XML
@@ -14,7 +14,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs a list of mini-animations from a file stream, starting with the beginning pointer table.
         /// </summary>
         /// <param name="stream">Stream to read from, starting with a pointer table to sub-mini anims.</param>
-        public MiniAnimGroup(FileStream stream)
+        public MiniAnimGroup(Stream stream)
         {
             Pointer = stream.Position;
             int firstAnimPointer = int.MaxValue;

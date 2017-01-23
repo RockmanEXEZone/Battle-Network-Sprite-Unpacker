@@ -3,7 +3,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class OAMDataListEntry
+    public class OAMDataListEntry
     {
         public int Index;
         public byte[] Memory;
@@ -23,7 +23,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs an OAM Data List Entry from the 5-byte binary in a BNSA file
         /// </summary>
         /// <param name="stream">Stream to construct a OAM Data Entry from</param>
-        public OAMDataListEntry(FileStream stream)
+        public OAMDataListEntry(Stream stream)
         {
             Console.Write("------Reading OAM Data List Entry at 0x" + stream.Position.ToString("X2"));
             Pointer = stream.Position;

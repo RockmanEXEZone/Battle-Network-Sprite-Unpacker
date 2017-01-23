@@ -1,0 +1,16 @@
+﻿<Controls:MetroWindow x:Class="Sprite_Viewer_GUI___WPF.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Sprite_Viewer_GUI___WPF"
+        mc:Ignorable="d"
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+        Title="About MMBN Sprite Viewer" Height="371.158" Width="373.902">
+    <Grid Background="#FF2F2F2F">
+        <Image x:Name="image" Height="90" Margin="10,5,9.2,0" VerticalAlignment="Top" Source="trez-logo.png"/>
+        <Label x:Name="titleNameLabel" Content="Megaman Battle Network Sprite Viewer" HorizontalContentAlignment="Center" Margin="10,95,9.6,0" VerticalAlignment="Top" FontWeight="Bold" Background="{x:Null}" Foreground="#FFEDEDED"/>
+        <TextBlock x:Name="titleNameLabel_Copy" TextAlignment="Center" Margin="10,121,9.6,10.4" Background="{x:Null}" Foreground="#FFEDEDED"><Run FontWeight="Bold" Text="Programming by"/><LineBreak/><Run Text="Mgamerz"/><LineBreak/><Run Text="Greiga Master"/><LineBreak/><Run Text="MegaRockEXE"/><LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="Libraries"/><LineBreak/><Run Text="Extended WPF Toolkit"/><LineBreak/><Run Text="Magick.NET"/><LineBreak/><Run/><LineBreak/><Run FontWeight="Bold" Text="This software is licensed under GPL"/><LineBreak/><LineBreak/><Run FontWeight="Bold" Text="http://therockmanexezone.com"/></TextBlock>
+
+    </Grid>
+</Controls:MetroWindow>

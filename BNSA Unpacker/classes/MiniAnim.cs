@@ -4,7 +4,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class MiniAnim
+    public class MiniAnim
     {
         public long Pointer;
         public List<MiniFrame> MiniFrames;
@@ -14,7 +14,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs a MiniAnim object from the current position of the stream. Will create sub-mini frames.
         /// </summary>
         /// <param name="stream">Stream to construct minianim from.</param>
-        public MiniAnim(FileStream stream, long MiniAnimTablePointer)
+        public MiniAnim(Stream stream, long MiniAnimTablePointer)
         {
             Pointer = stream.Position - MiniAnimTablePointer;
             Console.WriteLine("Reading MiniAnimation 0x" + stream.Position.ToString("X2")); //"X8" = 8 byte hex output

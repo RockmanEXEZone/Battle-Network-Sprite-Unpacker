@@ -2,13 +2,13 @@
 
 namespace BNSA_Unpacker.classes
 {
-    class Palette
+    public class Palette
     {
         public long Pointer;
         public byte[] Memory;
         private string palettePath;
 
-        public Palette(FileStream stream)
+        public Palette(Stream stream)
         {
             Pointer = stream.Position;
             Memory = new byte[0x20];

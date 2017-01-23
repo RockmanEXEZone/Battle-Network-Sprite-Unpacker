@@ -3,7 +3,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class MiniFrame
+    public class MiniFrame
     {
         public byte[] Memory;
         public long Pointer;
@@ -19,7 +19,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs a mini-frame object, part of a mini-animation.
         /// </summary>
         /// <param name="stream">Stream to construct a miniframe from</param>
-        public MiniFrame(FileStream stream)
+        public MiniFrame(Stream stream)
         {
             Pointer = stream.Position;
             OAMDataListIndex = (byte)stream.ReadByte();

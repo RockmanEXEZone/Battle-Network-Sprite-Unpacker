@@ -6,7 +6,7 @@ using System.Xml;
 
 namespace BNSA_Unpacker.classes
 {
-    class BNSAXMLFile
+    public class BNSAXMLFile
     {
         public bool IsValid = false;
         private string FilePath;

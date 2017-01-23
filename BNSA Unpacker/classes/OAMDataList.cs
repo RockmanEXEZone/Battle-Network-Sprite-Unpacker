@@ -4,7 +4,7 @@ using System.IO;
 
 namespace BNSA_Unpacker.classes
 {
-    class OAMDataList
+    public class OAMDataList
     {
         public long Pointer;
         public int Index;
@@ -15,7 +15,7 @@ namespace BNSA_Unpacker.classes
         /// Constructs a list of mini-animations from a file stream, starting with the beginning pointer table.
         /// </summary>
         /// <param name="stream">Stream to read from, starting with a pointer table to sub-mini anims.</param>
-        public OAMDataList(FileStream stream)
+        public OAMDataList(Stream stream)
         {
             Pointer = stream.Position;
             Console.WriteLine("----Reading OAM Data List at 0x" + Pointer.ToString("X2"));
