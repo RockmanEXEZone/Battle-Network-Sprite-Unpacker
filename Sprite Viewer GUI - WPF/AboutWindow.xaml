@@ -5,8 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Sprite_Viewer_GUI___WPF"
         mc:Ignorable="d"
-        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-        Title="About MMBN Sprite Viewer" Height="371.158" Width="373.902">
+        xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro" 
+        TitleCaps="False"
+        Title="About MMBN Sprite Viewer" 
+        Height="371.158" 
+        Width="373.902"                      
+        BorderThickness="1" 
+        BorderBrush="Olive"
+        GlowBrush="Black">
     <Grid Background="#FF2F2F2F">
         <Image x:Name="image" Height="90" Margin="10,5,9.2,0" VerticalAlignment="Top" Source="trez-logo.png"/>
         <Label x:Name="titleNameLabel" Content="Megaman Battle Network Sprite Viewer" HorizontalContentAlignment="Center" Margin="10,95,9.6,0" VerticalAlignment="Top" FontWeight="Bold" Background="{x:Null}" Foreground="#FFEDEDED"/>

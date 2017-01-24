@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<bnsa_gameoffsets>
+  <bngame meta-friendlyname="Megaman Battle Network 5 Team Protoman (US)" romcode="BRBE">
+    <archive offset="081C9800">MegaMan</archive>
+    <archive offset="081CF974">ProtoSoul</archive>
+    <archive offset="081D60F0">GryoSoul</archive>
+    <archive offset="081DCD6C">SearchSoul</archive>
+    <archive offset="081E4650">NapalmSoul</archive>
+    <archive offset="081ED434">MagnetSoul</archive>
+
+  </bngame>
+</bnsa_gameoffsets>

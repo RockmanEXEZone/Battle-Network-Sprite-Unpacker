@@ -100,6 +100,8 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="classes\BNSAOffsetFriendlyName.cs" />
+    <Compile Include="classes\ROMFriendlyNames.cs" />
     <Compile Include="LZ77.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
@@ -146,6 +148,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="trez-logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="resources\friendlyrominfo.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

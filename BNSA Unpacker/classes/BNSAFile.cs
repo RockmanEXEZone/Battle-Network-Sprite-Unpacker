@@ -251,6 +251,7 @@ namespace BNSA_Unpacker.classes
             {
                 Console.WriteLine("Resolving References in Animation " + i);
                 animation.ResolveReferences(this);
+                animation.CalculateAnimationBoundingBox(); //for viewer
                 i++;
             }
 

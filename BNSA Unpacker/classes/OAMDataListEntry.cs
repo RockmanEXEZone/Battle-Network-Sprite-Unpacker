@@ -9,8 +9,8 @@ namespace BNSA_Unpacker.classes
         public byte[] Memory;
         public long Pointer;
         public byte TileNumber;
-        public sbyte XOrigin;
-        public sbyte YOrigin;
+        public sbyte X;
+        public sbyte Y;
         public byte Flagset1, Flagset2;
 
         //Convenience
@@ -29,8 +29,8 @@ namespace BNSA_Unpacker.classes
             Pointer = stream.Position;
 
             TileNumber = (byte)stream.ReadByte();
-            XOrigin = (sbyte)stream.ReadByte();
-            YOrigin = (sbyte)stream.ReadByte();
+            X = (sbyte)stream.ReadByte();
+            Y = (sbyte)stream.ReadByte();
             Flagset1 = (byte)stream.ReadByte();
             Flagset2 = (byte)stream.ReadByte();
 
@@ -39,7 +39,7 @@ namespace BNSA_Unpacker.classes
             Memory = new byte[5];
             stream.Read(Memory, 0, 5);
 
-            if ((TileNumber & XOrigin & YOrigin & Flagset1 & Flagset2) == 0xFF)
+            if ((TileNumber & X & Y & Flagset1 & Flagset2) == 0xFF)
             {
                 EndOfListEntry = true; //this is an object list entry that marks the end of the current list
                 Console.WriteLine("... End List Marker");

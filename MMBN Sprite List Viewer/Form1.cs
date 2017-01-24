@@ -323,7 +323,7 @@ namespace MMBN_Sprite_List_Viewer
                 {
                     tileBitMap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
-                Point drawPos = new Point((picture.Width / 2) + entry.XOrigin, (picture.Height / 2) + entry.YOrigin);
+                Point drawPos = new Point((picture.Width / 2) + entry.X, (picture.Height / 2) + entry.Y);
                 //Console.WriteLine("Drawing OAM " + i + " w TN " + entry.TileNumber + ": " + drawPos.X + "," + drawPos.Y);
                 g.DrawImageUnscaled(tileBitMap, drawPos);
                 i++;

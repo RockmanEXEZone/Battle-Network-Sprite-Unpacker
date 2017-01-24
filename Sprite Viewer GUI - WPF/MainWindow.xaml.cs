@@ -1,6 +1,7 @@
 ﻿using BNSA_Unpacker.classes;
 using MahApps.Metro.Controls;
 using Microsoft.Win32;
+using Sprite_Viewer_GUI___WPF.classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,6 +10,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -17,6 +19,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Xml.Linq;
 
 namespace Sprite_Viewer_GUI___WPF
 {
@@ -50,6 +53,7 @@ namespace Sprite_Viewer_GUI___WPF
         const String BN1EUROMCODES = "AREP";
         const String BN1JPROMCODES = "AREJ";
         List<Button> paletteButtons;
+        private Dictionary<string, ROMFriendlyNames> FriendlyOffsetNames;
 
         private BNSAFile ActiveBNSA;
         public Byte[] ROM;
@@ -77,14 +81,60 @@ namespace Sprite_Viewer_GUI___WPF
             paletteButtons.Add(paletteColor14Button);
             paletteButtons.Add(paletteColor15Button);
             paletteButtons.Add(paletteColor16Button);
+
+            //colorize buttons
+            byte colVal = 255;
+            foreach (Button button in paletteButtons)
+            {
+                button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, colVal, colVal, colVal));
+                colVal -= 15;
+            }
+
+            //read friendly sprite names
+            try
+            {
+                FriendlyOffsetNames = new Dictionary<string, ROMFriendlyNames>();
+                XElement main = XElement.Load(@"resources/friendlyrominfo.xml");
+                //Run query
+                //Damn linq is ugly
+                var test = from teststuff in main.Descendants("bngame") select new object();
+
+                var gameslist = from gameinfo in main.Descendants("bngame")
+                                select new ROMFriendlyNames()
+                                {
+                                    FriendlyName = gameinfo.Attribute("meta-friendlyname").Value,
+                                    ROMCode = gameinfo.Attribute("romcode").Value,
+                                    FriendlyNameMap = (from offsetNameKeypair in gameinfo.Descendants("archive")
+                                                       select new
+                                                       {
+                                                           Name = int.Parse(offsetNameKeypair.Attribute("offset").Value, NumberStyles.HexNumber),
+                                                           Value = offsetNameKeypair.Value
+                                                       }).ToDictionary(o => o.Name, o => o.Value)
+
+                                };
+                foreach (ROMFriendlyNames info in gameslist)
+                {
+                    string romcode = info.ROMCode;
+                    FriendlyOffsetNames[romcode] = info;
+                    Console.WriteLine("Read friendly names for " + info.FriendlyName);
+                    foreach (KeyValuePair<int, string> entry in info.FriendlyNameMap)
+                    {
+                        Console.WriteLine("--" + entry.Value + " maps to " + entry.Key);
+                    }
+                }
+
+            }
+            catch (Exception e)
+            {
+                //Failed to read file...
+                StatusLabel.Content = "Error reading friendlyrominfo.xml: " + e.Message;
+            }
+
+            //start animator thread
             spriteAnimatorWorker = new BackgroundWorker();
             spriteAnimatorWorker.DoWork += SpriteAnimatorWork;
             spriteAnimatorWorker.WorkerSupportsCancellation = true;
             spriteAnimatorWorker.RunWorkerAsync();
-            List<String> directions = new List<String>();
-            directions.Add("Open a file");
-            directions.Add("to view sprites");
-            romSpritePointersListbox.ItemsSource = directions;
         }
 
         private void SpriteAnimatorWork(object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -121,14 +171,14 @@ namespace Sprite_Viewer_GUI___WPF
                 OpenROM(open.FileName);
         }
 
-        private void OpenROM(string open)
+        private void OpenROM(string fileName)
         {
             frameImage.Stretch = Stretch.None;
             RenderOptions.SetBitmapScalingMode(frameImage, BitmapScalingMode.NearestNeighbor);
             romSpritePointersListbox.ItemsSource = new List<String>(); //clear
-            ROM = File.ReadAllBytes(open);
+            ROM = File.ReadAllBytes(fileName);
             string ROMID = GetROMID(ROM);
-            List<string> lbi = new List<string>();
+            List<BNSAOffsetFriendlyName> offsetList = new List<BNSAOffsetFriendlyName>();
             int startoffset = 0;
             int endoffset = 0;
             if (BN6USROMCODES.Contains(ROMID))
@@ -256,17 +306,47 @@ namespace Sprite_Viewer_GUI___WPF
             {
                 startoffset = 0x12614;
                 endoffset = 0x12B74;
-
             }
+
             for (int i = startoffset; i < endoffset; i += 4)
             {
-                lbi.Add(getint32(ROM, i).ToString("X8"));
+                BNSAOffsetFriendlyName fn = new BNSAOffsetFriendlyName();
+                fn.Offset = getint32(ROM, i);
+                fn.FriendlyName = getFriendlyName(ROMID, fn.Offset);
+                offsetList.Add(fn);
+                Console.WriteLine("Add to list: " + fn.FriendlyName);
             }
-            romSpritePointersListbox.ItemsSource = lbi.ToArray();
+            romSpritePointersListbox.ItemsSource = offsetList.ToArray();
             romSpritePointersListbox.SelectedIndex = 0;
+            StatusLabel.Content = "Viewing " + Path.GetFileName(fileName);
+
             ChangeAnimation();
             //filename = open;
             //this.Text = "Megaman BattleNetwork Sprite List Viewer ~ By Greiga Master (" + Path.GetFileName(filename) + ")";
+        }
+
+        /// <summary>
+        /// Gets the friendly name of the offset in the ROM with the specified ROM ID
+        /// </summary>
+        /// <param name="ROMID">ROM code</param>
+        /// <param name="offset">Offset in ROM to find a friendly name for</param>
+        /// <returns>Friendly name, or offset in hex if not found.</returns>
+        private string getFriendlyName(string ROMID, int offset)
+        {
+            ROMFriendlyNames friendlyDefinition = null;
+            if (FriendlyOffsetNames.TryGetValue(ROMID, out friendlyDefinition))
+            {
+                string friendlyName;
+                if (friendlyDefinition.FriendlyNameMap.TryGetValue(offset, out friendlyName))
+                {
+                    return friendlyName;
+                }
+                else
+                {
+                    return offset.ToString("X8");
+                }
+            }
+            return offset.ToString("X8");
         }
 
         private void openBNSAMenuItem_Click(object sender, RoutedEventArgs e)
@@ -290,6 +370,7 @@ namespace Sprite_Viewer_GUI___WPF
             animationCountLabel.Content = "of " + animationIndexUpDown.Maximum;
             paletteCountLabel.Content = "of " + (ActiveBNSA.Palettes.Count - 1);
             //frameIndexUpDown.Maximum = ActiveBNSA.Animations[0].Frames.Count - 1;
+            StatusLabel.Content = "Viewing " + Path.GetFileName(fileName);
             ChangeAnimation();
         }
 
@@ -408,9 +489,10 @@ namespace Sprite_Viewer_GUI___WPF
         /// </summary>
         /// <param name="frame">Frame to draw</param>
         /// <returns>Bitmap of drawn sprite</returns>
-        private Bitmap DrawSprite(BNSA_Unpacker.classes.Frame frame)
+        private Bitmap DrawSprite(BNSA_Unpacker.classes.Frame frame, Rectangle rectangle)
         {
-            Bitmap picture = new Bitmap(256, 256);
+            int size = Math.Max(rectangle.Height, rectangle.Width);
+            Bitmap picture = new Bitmap(size, size);
             Palette palette = ActiveBNSA.Palettes[Convert.ToInt32(paletteIndexUpDown.Value)];
             OAMDataListGroup frameData = frame.ResolvedOAMDataListGroup;
             int[] paletteData = paletteData = getUsablePaletteColors(palette.Memory);
@@ -424,6 +506,7 @@ namespace Sprite_Viewer_GUI___WPF
             //int num = getint32(spritefile, opointer + subFrameIndex * 4);
 
             int i = 0;
+            Console.WriteLine("Draw Sprite at Size: " + rectangle.Width + " x " + rectangle.Height);
             foreach (OAMDataListEntry entry in frameData.OAMDataLists[0].OAMDataListEntries)
             {
 
@@ -444,8 +527,9 @@ namespace Sprite_Viewer_GUI___WPF
                 {
                     tileBitMap.RotateFlip(RotateFlipType.RotateNoneFlipY);
                 }
-                System.Drawing.Point drawPos = new System.Drawing.Point((picture.Width / 2) + entry.XOrigin, (picture.Height / 2) + entry.YOrigin);
-                //Console.WriteLine("Drawing OAM " + i + " w TN " + entry.TileNumber + ": " + drawPos.X + "," + drawPos.Y);
+                System.Drawing.Point drawPos = new System.Drawing.Point(/*(picture.Width / 2) + */
+                entry.X - rectangle.Left, /*(picture.Height / 2) + */entry.Y - rectangle.Top); //yes, minus, confusing, i know...
+                                                                                               //Console.WriteLine("Drawing OAM " + i + " w TN " + entry.TileNumber + ": " + drawPos.X + "," + drawPos.Y);
                 g.DrawImageUnscaled(tileBitMap, drawPos);
                 i++;
             }
@@ -515,8 +599,9 @@ namespace Sprite_Viewer_GUI___WPF
             }
             int animationIndex = Convert.ToInt32(animationIndexUpDown.Value);
             int frameIndex = Convert.ToInt32(frameIndexUpDown.Value);
-            BNSA_Unpacker.classes.Frame frame = ActiveBNSA.Animations[animationIndex].Frames[frameIndex];
-            Bitmap bm = DrawSprite(frame);
+            Animation anim = ActiveBNSA.Animations[animationIndex];
+            BNSA_Unpacker.classes.Frame frame = anim.Frames[frameIndex];
+            Bitmap bm = DrawSprite(frame, anim.CalculateAnimationBoundingBox());
 
             //PresentationSource source = PresentationSource.FromVisual(this);
 
@@ -573,10 +658,9 @@ namespace Sprite_Viewer_GUI___WPF
                 return;
             }
 
-            string listText = (string)romSpritePointersListbox.SelectedItem;
-            int bnsaOffset;
-            bool isNumeric = int.TryParse(listText, NumberStyles.HexNumber, CultureInfo.InvariantCulture
-                , out bnsaOffset);
+            BNSAOffsetFriendlyName selectedBNSA = (BNSAOffsetFriendlyName)romSpritePointersListbox.SelectedItem;
+            Console.WriteLine("BNSA Offset changed to " + selectedBNSA.Offset.ToString("X8"));
+            bool isNumeric = selectedBNSA.Offset > 0;
             if (isNumeric)
             {
                 byte[] BNSAMemory;
@@ -584,18 +668,17 @@ namespace Sprite_Viewer_GUI___WPF
                 animationIndexUpDown.Value = 0;
                 frameIndexUpDown.Value = 0;
                 paletteIndexUpDown.Value = 0;
-
-                if (romSpritePointersListbox.SelectedItem.ToString().Substring(0, 2) == "88")
+                if (selectedBNSA.Offset.ToString("X8").Substring(0, 2) == "88")
                 {
                     //Archive is compressed
-                    BNSAMemory = Nintenlord.GBA.Compressions.LZ77.Decompress(ROM, (int.Parse((string)romSpritePointersListbox.SelectedItem, System.Globalization.NumberStyles.HexNumber) & 0x00FFFFFF));
+                    BNSAMemory = Nintenlord.GBA.Compressions.LZ77.Decompress(ROM, selectedBNSA.Offset & 0x00FFFFFF);
                     Array.Copy(BNSAMemory, 4, BNSAMemory, 0, BNSAMemory.Length - 4);
                 }
                 else
                 {
                     //Not compressed
                     //Find the end of the BNSA.
-                    offset = (int.Parse((string)romSpritePointersListbox.SelectedItem, System.Globalization.NumberStyles.HexNumber) & 0x00FFFFFF) + 4;
+                    offset = (selectedBNSA.Offset & 0x00FFFFFF) + 4;
                     int numAnimations = 0;
                     if (getint32(ROM, offset) / 4 != 0)
                     {
@@ -640,9 +723,10 @@ namespace Sprite_Viewer_GUI___WPF
         private int getmaxframes(int animation)
         {
             int frame = 0;
+            BNSAOffsetFriendlyName selectedItem = (BNSAOffsetFriendlyName)romSpritePointersListbox.SelectedItem;
             if (romSpritePointersListbox.SelectedItem.ToString().Substring(0, 2) == "88")
             {
-                byte[] spritefile = Nintenlord.GBA.Compressions.LZ77.Decompress(ROM, (int.Parse((string)romSpritePointersListbox.SelectedItem, System.Globalization.NumberStyles.HexNumber) & 0x00FFFFFF));
+                byte[] spritefile = Nintenlord.GBA.Compressions.LZ77.Decompress(ROM, selectedItem.Offset & 0x00FFFFFF);
                 int offset = 8;
                 while (true)
                 {
@@ -657,7 +741,8 @@ namespace Sprite_Viewer_GUI___WPF
             else
             {
                 byte[] memory = ROM;
-                int offset = (int.Parse((string)romSpritePointersListbox.SelectedItem, System.Globalization.NumberStyles.HexNumber) & 0x00FFFFFF) + 4;
+                int offset = (selectedItem.Offset & 0x00FFFFFF) + 4;
+
                 while (true)
                 {
                     int somedata = (getint32(memory, offset + getint32(memory, offset + (4 * (int)animation)) + (5 * 4 * frame) + 4 + 4 + 4 + 4));
@@ -843,8 +928,54 @@ namespace Sprite_Viewer_GUI___WPF
 
         private void bgColorButtonClick(object sender, RoutedEventArgs e)
         {
-            Button colorButton = (Button) sender;
+            Button colorButton = (Button)sender;
             centerPanel.Background = colorButton.Background;
+        }
+
+        private void ExportPNGMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "PNG Image |*.png";
+            if (save.ShowDialog() == true)
+            {
+                //int offset = (int.Parse(listBox1.SelectedItem.ToString(), System.Globalization.NumberStyles.HexNumber) & 0x00FFFFFF) + 4;
+                Animation animation = ActiveBNSA.Animations[(int)animationIndexUpDown.Value];
+                Bitmap b = DrawSprite(animation.Frames[(int)frameIndexUpDown.Value], animation.CalculateAnimationBoundingBox());
+                int padding = 0;
+                //Crop
+                var pixelsX = Enumerable.Range(0, b.Width);
+                var pixelsY = Enumerable.Range(0, b.Height);
+
+                int localleft = pixelsX.FirstOrDefault(
+                            x => pixelsY.Any(y => b.GetPixel(x, y).A != 0));
+                int localright = pixelsX.Reverse().FirstOrDefault(
+                            x => pixelsY.Any(y => b.GetPixel(x, y).A != 0));
+                int localtop = pixelsY.FirstOrDefault(
+                            y => pixelsX.Any(x => b.GetPixel(x, y).A != 0));
+                int localbottom = pixelsY.Reverse().FirstOrDefault(
+                            y => pixelsX.Any(x => b.GetPixel(x, y).A != 0));
+
+                int width = localright - localleft + padding * 2;
+                int height = localbottom - localtop + padding * 2;
+                b = CropBitmap(b, localleft - padding, localtop - padding, width, height);
+                b.Save(save.FileName);
+            }
+        }
+
+        /// <summary>
+        /// Crops a bitmap object
+        /// </summary>
+        /// <param name="bitmap">bitmap to crop</param>
+        /// <param name="cropX">top left X</param>
+        /// <param name="cropY">top left Y</param>
+        /// <param name="cropWidth">width of crop rectangle</param>
+        /// <param name="cropHeight">height of crop rectangle</param>
+        /// <returns></returns>
+        private Bitmap CropBitmap(Bitmap bitmap, int cropX, int cropY, int cropWidth, int cropHeight)
+        {
+            Rectangle rect = new Rectangle(cropX, cropY, cropWidth, cropHeight);
+            Bitmap cropped = bitmap.Clone(rect, bitmap.PixelFormat);
+            return cropped;
         }
     }
 }

@@ -7,19 +7,23 @@
         xmlns:local="clr-namespace:Sprite_Viewer_GUI___WPF"
         xmlns:Controls="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
         mc:Ignorable="d"
-        Title="MMBN Sprite Viewer" Height="350" Width="711.098"
-                      BorderThickness="0" 
-                      GlowBrush="Black"
-                      >
+        TitleCaps="False"
+        Title="MMBN Sprite Viewer" 
+        Height="350" 
+        Width="711.098"
+        BorderThickness="1" 
+        BorderBrush="Olive"
+        GlowBrush="Black">
     <Grid x:Name="MainWindow1">
         <Grid.RowDefinitions>
             <RowDefinition Height="26"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="26"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="90"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="205"/>
+            <ColumnDefinition Width="190"/>
         </Grid.ColumnDefinitions>
         <Menu x:Name="menu" Grid.ColumnSpan="3" Grid.Column="0" Grid.Row="0">
             <MenuItem Header="File">
@@ -32,16 +36,17 @@
             <MenuItem Header="Export">
                 <MenuItem Header="Export BNSA" ToolTip="Exports the current BNSA archive to disk in an uncompressed format"></MenuItem>
                 <MenuItem Header="Export decompiled BNSA" ToolTip="Exports the current BNSA archive as a decompiled project for editing"></MenuItem>
-                <Separator HorizontalAlignment="Left" Height="1" Width="100"/>
-                <MenuItem Header="Export Animation as GIF" ToolTip="Exports the current animation as a cropped GIF that plays at the game speed"></MenuItem>
-                <MenuItem Header="Export Animation as Strip" ToolTip="Exports the current animation as a list of sprites in a single file"></MenuItem>
-                <MenuItem Header="Export Frame as PNG" ToolTip="Exports the currently displayed frame as a PNG file"></MenuItem>
+                <Separator/>
+                <MenuItem x:Name="ExportAnimationGIFItem" Header="Export Animation as GIF" ToolTip="Exports the current animation as a cropped GIF that plays at the game speed"></MenuItem>
+                <MenuItem x:Name="ExportAnimationStripItem" Header="Export Animation as Strip" ToolTip="Exports the current animation as a list of sprites in a single file"></MenuItem>
+                <MenuItem x:Name ="ExportPNGMenuItem" Header="Export Frame as PNG" ToolTip="Exports the currently displayed frame as a PNG file" Click="ExportPNGMenuItem_Click"></MenuItem>
             </MenuItem>
             <MenuItem Header="Help">
                 <MenuItem Header="About MMBN Sprite Viewer" ToolTip="View information about this program" Click="MenuItem_Click"></MenuItem>
                 <MenuItem Header="The Rockman EXE Zone" ToolTip="Visit The Rockman EXE Zone for all your battle network modding needs"></MenuItem>
             </MenuItem>
         </Menu>
+
         <ListBox x:Name="romSpritePointersListbox" Grid.Column="0" Grid.Row="1" SelectionChanged="romSpritePointersListbox_SelectionChanged" HorizontalAlignment="Left" Background="#FF424242" ToolTip="List of BNSA offsets in the ROM file"/>
         <Grid x:Name="centerPanel" Background="#FF424242" Grid.Row="1" Grid.Column="1">
             <Grid.RowDefinitions>
@@ -153,7 +158,8 @@
             <Label x:Name="drawScaleLabel" Grid.Row="13" Grid.Column="1" Content="Draw Scale"/>
             <xctk:IntegerUpDown x:Name="drawScaleUpDown" Grid.Row="13" Grid.Column="3" Value="1" Minimum="1" Maximum="5" ValueChanged="drawScaleUpDown_ValueChanged" ToolTip="Set the drawing size multiplier for the frame. You can set this using the scroll wheel over the frame as well" Foreground="#FFFFFDFD"/>
         </Grid>
-
-
+        <Grid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+            <Label x:Name="StatusLabel" Content="Open a Battle Network ROM or BNSA file to begin"/>
+        </Grid>
     </Grid>
 </Controls:MetroWindow>
