@@ -287,7 +287,7 @@ namespace MMBN_Sprite_List_Viewer
         private Bitmap DrawSprite(Frame frame)
         {
             Bitmap picture = new Bitmap(256, 256);
-            Palette palette = ActiveBNSA.Palettes[Convert.ToInt32(paletteIndexUpDown.Value)];
+            Palette palette = ActiveBNSA.OriginalPalettes[Convert.ToInt32(paletteIndexUpDown.Value)];
             OAMDataListGroup frameData = frame.ResolvedOAMDataListGroup;
             int[] paletteData = paletteData = getUsablePaletteColors(palette.Memory);
 
@@ -1180,7 +1180,7 @@ namespace MMBN_Sprite_List_Viewer
         {
             OpenROM(@"E:\Google Drive\GBA-2\ASM\WhiteVanilla.gba");
             //OpenBNSA(@"E:\Google Drive\GBA-2\ASM\spritearchives\bunny.bnsa");
-            paletteIndexUpDown.Maximum = ActiveBNSA.Palettes.Count - 1;
+            paletteIndexUpDown.Maximum = ActiveBNSA.OriginalPalettes.Count - 1;
             spriteanimator.RunWorkerAsync();
         }
 

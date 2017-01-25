@@ -16,7 +16,8 @@ namespace BNSA_Unpacker.classes
 
         public List<Animation> Animations = new List<Animation>();
         public List<Tileset> Tilesets = new List<Tileset>();
-        public List<Palette> Palettes = new List<Palette>();
+        public List<Palette> OriginalPalettes = new List<Palette>();
+        public List<Palette> WorkingPalettes = new List<Palette>(); //For GUI
         public List<MiniAnimGroup> MiniAnimGroups = new List<MiniAnimGroup>();
         public List<OAMDataListGroup> OAMDataListGroups = new List<OAMDataListGroup>();
 
@@ -153,7 +154,7 @@ namespace BNSA_Unpacker.classes
                     bnsaStream.Seek(pos, SeekOrigin.Begin);
                     Console.WriteLine("Reading Palette 0x" + bnsaStream.Position.ToString("X2"));
                     Palette palette = new Palette(bnsaStream);
-                    Palettes.Add(palette);
+                    OriginalPalettes.Add(palette);
                     //Console.WriteLine("Reading next Palette 0x" + bnsaStream.Position.ToString("X2"));
 
                 }
@@ -294,7 +295,7 @@ namespace BNSA_Unpacker.classes
             }
 
             i = 0;
-            foreach (Palette palette in Palettes)
+            foreach (Palette palette in OriginalPalettes)
             {
                 palette.Export(palettesPath, i);
                 i++;
@@ -320,6 +321,21 @@ namespace BNSA_Unpacker.classes
                 oamDataList.Export(oamDataListsPath, i);
                 i++;
             }
+        }
+
+        /// <summary>
+        /// Clones the original palettes and loads their color values
+        /// </summary>
+        public void CreateWorkingPalettes()
+        {
+            WorkingPalettes = new List<Palette>();
+            foreach (Palette palette in OriginalPalettes)
+            {
+                Palette clone = new Palette(palette);
+                clone.GenerateColorsFromPalette();
+                WorkingPalettes.Add(clone);
+            }
+
         }
 
         /// <summary>

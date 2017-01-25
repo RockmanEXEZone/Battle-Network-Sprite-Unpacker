@@ -21,6 +21,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml.Linq;
+using Xceed.Wpf.Toolkit;
 
 namespace Sprite_Viewer_GUI___WPF
 {
@@ -53,43 +54,50 @@ namespace Sprite_Viewer_GUI___WPF
         const String BN1USROMCODES = "AREE";
         const String BN1EUROMCODES = "AREP";
         const String BN1JPROMCODES = "AREJ";
-        List<Button> paletteButtons;
+        Dictionary<ColorPicker, int> colorPickerPaletteButtons;
         private Dictionary<string, ROMFriendlyNames> FriendlyOffsetNames;
 
         private BNSAFile ActiveBNSA;
         public Byte[] ROM;
         private BackgroundWorker spriteAnimatorWorker;
         private ManualResetEvent mre = new ManualResetEvent(false);
+        private Boolean PaletteIsChanging = false;
 
 
         public MainWindow()
         {
             InitializeComponent();
-            paletteButtons = new List<Button>();
-            paletteButtons.Add(paletteColor1Button);
-            paletteButtons.Add(paletteColor2Button);
-            paletteButtons.Add(paletteColor3Button);
-            paletteButtons.Add(paletteColor4Button);
-            paletteButtons.Add(paletteColor5Button);
-            paletteButtons.Add(paletteColor6Button);
-            paletteButtons.Add(paletteColor7Button);
-            paletteButtons.Add(paletteColor8Button);
-            paletteButtons.Add(paletteColor9Button);
-            paletteButtons.Add(paletteColor10Button);
-            paletteButtons.Add(paletteColor11Button);
-            paletteButtons.Add(paletteColor12Button);
-            paletteButtons.Add(paletteColor13Button);
-            paletteButtons.Add(paletteColor14Button);
-            paletteButtons.Add(paletteColor15Button);
-            paletteButtons.Add(paletteColor16Button);
+            colorPickerPaletteButtons = new Dictionary<ColorPicker, int>();
+            colorPickerPaletteButtons[paletteColor1Button] = 0;
+            colorPickerPaletteButtons[paletteColor2Button] = 1;
+            colorPickerPaletteButtons[paletteColor3Button] = 2;
+            colorPickerPaletteButtons[paletteColor4Button] = 3;
+            colorPickerPaletteButtons[paletteColor5Button] = 4;
+            colorPickerPaletteButtons[paletteColor6Button] = 5;
+            colorPickerPaletteButtons[paletteColor7Button] = 6;
+            colorPickerPaletteButtons[paletteColor8Button] = 7;
+            colorPickerPaletteButtons[paletteColor9Button] = 8;
+            colorPickerPaletteButtons[paletteColor10Button] = 9;;
+            colorPickerPaletteButtons[paletteColor11Button] = 10;
+            colorPickerPaletteButtons[paletteColor12Button] = 11;
+            colorPickerPaletteButtons[paletteColor13Button] = 12;
+            colorPickerPaletteButtons[paletteColor14Button] = 13;
+            colorPickerPaletteButtons[paletteColor15Button] = 14;
+            colorPickerPaletteButtons[paletteColor16Button] = 15;
 
             //colorize buttons
             byte colVal = 255;
-            foreach (Button button in paletteButtons)
+
+            foreach (KeyValuePair<ColorPicker, int> entry in colorPickerPaletteButtons)
             {
-                button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(255, colVal, colVal, colVal));
+                ColorPicker pickerButton = entry.Key;
+                // do something with entry.Value or entry.Key
+                System.Windows.Media.Color col = System.Windows.Media.Color.FromArgb(255, colVal, colVal, colVal);
+                pickerButton.SelectedColor = col;
+                pickerButton.Background = new SolidColorBrush(col);
                 colVal -= 15;
             }
+
 
             //read friendly sprite names
             try
@@ -120,7 +128,7 @@ namespace Sprite_Viewer_GUI___WPF
                     Console.WriteLine("Read friendly names for " + info.FriendlyName);
                     foreach (KeyValuePair<int, string> entry in info.FriendlyNameMap)
                     {
-                        Console.WriteLine("--" + entry.Value + " maps to " + entry.Key);
+                        Console.WriteLine("--" + entry.Value + " maps to " + entry.Key.ToString("X8"));
                     }
                 }
 
@@ -138,7 +146,6 @@ namespace Sprite_Viewer_GUI___WPF
             spriteAnimatorWorker.RunWorkerAsync();
 
             //debug
-            OpenBNSA(@"C:\users\mjperez\bnsa\bunny.bnsa");
         }
 
         private void SpriteAnimatorWork(object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -189,6 +196,7 @@ namespace Sprite_Viewer_GUI___WPF
             {
                 startoffset = 0x031CEC;
                 endoffset = 0x0329A8;
+                ROMID = "EXE6";
 
             }
             else if (BN6JPROMCODES.Contains(ROMID))
@@ -318,7 +326,6 @@ namespace Sprite_Viewer_GUI___WPF
                 fn.Offset = getint32(ROM, i);
                 fn.FriendlyName = getFriendlyName(ROMID, fn.Offset);
                 offsetList.Add(fn);
-                Console.WriteLine("Add to list: " + fn.FriendlyName);
             }
             romSpritePointersListbox.ItemsSource = offsetList.ToArray();
             romSpritePointersListbox.SelectedIndex = 0;
@@ -371,15 +378,9 @@ namespace Sprite_Viewer_GUI___WPF
             RenderOptions.SetBitmapScalingMode(frameImage, BitmapScalingMode.NearestNeighbor);
             romSpritePointersListbox.ItemsSource = new List<String>(); //clear
 
+            LoadBNSA(File.ReadAllBytes(fileName));
             ActiveBNSA = new BNSAFile(fileName);
-            ActiveBNSA.ResolveReferences();
-            animationIndexUpDown.Maximum = ActiveBNSA.Animations.Count - 1;
-            paletteIndexUpDown.Maximum = ActiveBNSA.Palettes.Count - 1;
-            animationCountLabel.Content = "of " + animationIndexUpDown.Maximum;
-            paletteCountLabel.Content = "of " + (ActiveBNSA.Palettes.Count - 1);
-            //frameIndexUpDown.Maximum = ActiveBNSA.Animations[0].Frames.Count - 1;
             StatusLabel.Content = "Viewing " + Path.GetFileName(fileName);
-            ChangeAnimation();
         }
 
         /// <summary>
@@ -404,31 +405,19 @@ namespace Sprite_Viewer_GUI___WPF
         /// </summary>
         /// <param name="bnPaletteBinary">Battle Network Binary Palette Data</param>
         /// <returns>Array of alpha-rgb values</returns>
-        private int[] getUsablePaletteColors(byte[] bnPaletteBinary)
-        {
-            int[] paletteData = new int[16];
-            for (int i = 0; i < 16; i++)
-            {
-                short paletteColor16bit = BitConverter.ToInt16(new byte[2] { (byte)bnPaletteBinary[i * 2], (byte)bnPaletteBinary[i * 2 + 1] }, 0);
-                paletteData[i] = bgr2argb(paletteColor16bit);
-            }
-            paletteData[0] = System.Drawing.Color.Transparent.ToArgb();
-            return paletteData;
-        }
+        //private int[] getUsablePaletteColors(byte[] bnPaletteBinary)
+        //{
+        //    int[] paletteData = new int[16];
+        //    for (int i = 0; i < 16; i++)
+        //    {
+        //        short paletteColor16bit = BitConverter.ToInt16(new byte[2] { (byte)bnPaletteBinary[i * 2], (byte)bnPaletteBinary[i * 2 + 1] }, 0);
+        //        paletteData[i] = bgr2argb(paletteColor16bit);
+        //    }
+        //    paletteData[0] = System.Drawing.Color.Transparent.ToArgb();
+        //    return paletteData;
+        //}
 
-        /// <summary>
-        /// Converts BGR to Alpha RGB for displaying in a windows bitmap
-        /// </summary>
-        /// <param name="bgr">bbggrr short value.</param>
-        /// <returns></returns>
-        private static int bgr2argb(short bgr)
-        {
-            byte a = 0xFF,
-                 r = (byte)((bgr & 0x1F) << 3),
-                 g = (byte)(((bgr >> 5) & 0x1F) << 3),
-                 b = (byte)(((bgr >> 10) & 0x1F) << 3);
-            return (a << 24) | (r << 16) | (g << 8) | b;
-        }
+
 
         /// <summary>
         /// Reads tileset data and places it into a bitmap, applying the palette provided.
@@ -501,27 +490,26 @@ namespace Sprite_Viewer_GUI___WPF
         {
             int size = Math.Max(rectangle.Height, rectangle.Width);
             Bitmap picture = new Bitmap(size, size);
-            Palette palette = ActiveBNSA.Palettes[Convert.ToInt32(paletteIndexUpDown.Value)];
+            Palette palette = ActiveBNSA.WorkingPalettes[Convert.ToInt32(paletteIndexUpDown.Value)];
             OAMDataListGroup frameData = frame.ResolvedOAMDataListGroup;
-            int[] paletteData = paletteData = getUsablePaletteColors(palette.Memory);
+            //int[] paletteData = getUsablePaletteColors(palette.Memory);
             //int animationoffset = offset + getint32(spritefile, offset + (4 * animationIndex));
             //int gpointer = offset + getint32(spritefile, animationoffset + (5 * 4 * frameIndex));
             //int ppointer = offset + getint32(spritefile, animationoffset + (5 * 4 * frameIndex) + 4) + (int)(numericUpDown3.Value * 0x20);
-            UpdatePaletteDisplay(paletteData);
+            //UpdatePaletteDisplay(palette.Colors);
             //int opointer = offset + getint32(spritefile, animationoffset + (5 * 4 * frameIndex) + 4 + 4 + 4); //Pointer to OAM Data
             UpdateInfoBox(frame);
             Graphics g = Graphics.FromImage(picture);
             //int num = getint32(spritefile, opointer + subFrameIndex * 4);
 
             int i = 0;
-            Console.WriteLine("Draw Sprite at Size: " + rectangle.Width + " x " + rectangle.Height);
             foreach (OAMDataListEntry entry in frameData.OAMDataLists[0].OAMDataListEntries)
             {
 
                 //Draw Sprite into Graphics
                 //Bitmap part = Read4BBP(entry.ObjectWidth, entry.ObjectHeight, frame.ResolvedTileset.Memory, paletteData);
                 byte[] tileData = getTile(frame.ResolvedTileset.Memory, entry.TileNumber, entry.ObjectWidth, entry.ObjectHeight);
-                Bitmap tileBitMap = Read4BBP(entry.ObjectWidth, entry.ObjectHeight, tileData, paletteData);
+                Bitmap tileBitMap = Read4BBP(entry.ObjectWidth, entry.ObjectHeight, tileData, palette.Colors);
 
                 if (entry.HorizontalFlip & entry.VerticalFlip)
                 {
@@ -584,16 +572,27 @@ namespace Sprite_Viewer_GUI___WPF
         /// <param name="paletteColorsARGB">Palettes in ARGB</param>
         private void UpdatePaletteDisplay(int[] paletteColorsARGB)
         {
-            for (int i = 1; i < 16; i++)
+            PaletteIsChanging = true;
+            int i = 0;
+            foreach (KeyValuePair<ColorPicker, int> entry in colorPickerPaletteButtons)
             {
-                Button button = paletteButtons[i];
+                if (i == 0)
+                {
+                    i++;
+                    continue; //skip transparent color
+                }
+                ColorPicker button = entry.Key;
                 int myColor = paletteColorsARGB[i];
                 byte b = (byte)(myColor & 0xFF);
                 byte g = (byte)((myColor >> 8) & 0xFF);
                 byte r = (byte)((myColor >> 16) & 0xFF);
                 byte a = (byte)((myColor >> 24) & 0xFF);
-                button.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(a, r, g, b));
+                System.Windows.Media.Color col = System.Windows.Media.Color.FromArgb(a, r, g, b); ;
+                button.SelectedColor = col;
+                button.Background = new SolidColorBrush(col);
+                i++;
             }
+            PaletteIsChanging = false;
         }
 
         /// <summary>
@@ -711,16 +710,25 @@ namespace Sprite_Viewer_GUI___WPF
                     BNSAMemory = new byte[(opointer + num) - startoffset];
                     Array.Copy(ROM, startoffset, BNSAMemory, 0, (opointer + num) - startoffset);
                 }
-                //File.WriteAllBytes(@"C:\users\michael\bnsa\bnsabytes.bnsa", BNSAMemory);
-                ActiveBNSA = new BNSAFile(BNSAMemory);
-                ActiveBNSA.ResolveReferences();
-                animationIndexUpDown.Maximum = ActiveBNSA.Animations.Count - 1;
-                paletteIndexUpDown.Maximum = ActiveBNSA.Palettes.Count - 1;
-                animationCountLabel.Content = "of " + animationIndexUpDown.Maximum;
-                paletteCountLabel.Content = "of " + (ActiveBNSA.Palettes.Count - 1);
-                //frameIndexUpDown.Maximum = ActiveBNSA.Animations[0].Frames.Count - 1;
-                ChangeAnimation();
+                LoadBNSA(BNSAMemory);
             }
+        }
+
+        /// <summary>
+        /// Load BNSA Shared method
+        /// </summary>
+        /// <param name="memory">BSNA Memory to load</param>
+        private void LoadBNSA(byte[] memory)
+        {
+            ActiveBNSA = new BNSAFile(memory);
+            ActiveBNSA.ResolveReferences();
+            ActiveBNSA.CreateWorkingPalettes();
+            animationIndexUpDown.Maximum = ActiveBNSA.Animations.Count - 1;
+            paletteIndexUpDown.Maximum = ActiveBNSA.WorkingPalettes.Count - 1;
+            animationCountLabel.Content = "of " + animationIndexUpDown.Maximum;
+            paletteCountLabel.Content = "of " + (ActiveBNSA.WorkingPalettes.Count - 1);
+            //frameIndexUpDown.Maximum = ActiveBNSA.Animations[0].Frames.Count - 1;
+            ChangeAnimation();
         }
 
         /// <summary>
@@ -764,26 +772,30 @@ namespace Sprite_Viewer_GUI___WPF
             return frame;
         }
 
-        private void paletteButtonClick(object sender, RoutedEventArgs e)
-        {
-            //Not yet implemented...
-            Button callingButton = (Button)sender;
-            callingButton.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(40, 40, 160));
-        }
-
         private void paletteIndexUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            UpdateImage();
+            if (ActiveBNSA != null)
+            {
+                UpdatePaletteDisplay(ActiveBNSA.WorkingPalettes[Convert.ToInt32(paletteIndexUpDown.Value)].Colors);
+                UpdateImage();
+            }
         }
 
         private void frameIndexUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            UpdateImage();
+            if (ActiveBNSA != null)
+            {
+                //UpdatePaletteDisplay(ActiveBNSA.WorkingPalettes[Convert.ToInt32(paletteIndexUpDown.Value)].Colors);
+                UpdateImage();
+            }
         }
 
         private void animationIndexUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            ChangeAnimation();
+            if (ActiveBNSA != null)
+            {
+                ChangeAnimation();
+            }
         }
 
         /// <summary>
@@ -809,6 +821,7 @@ namespace Sprite_Viewer_GUI___WPF
                     }
 
                     frameCountLabel.Content = "of " + (ActiveBNSA.Animations[(int)animationIndexUpDown.Value].Frames.Count - 1);
+                    UpdatePaletteDisplay(ActiveBNSA.WorkingPalettes[Convert.ToInt32(paletteIndexUpDown.Value)].Colors);
                     UpdateImage();
                 }
             }
@@ -988,45 +1001,54 @@ namespace Sprite_Viewer_GUI___WPF
 
         private void ExportAnimationGIFItem_Click(object sender, RoutedEventArgs e)
         {
-            int padding = 2; //on each side
-            int animationToExport = Convert.ToInt32(animationIndexUpDown.Value);
-            Animation anim = ActiveBNSA.Animations[animationToExport];
-            Rectangle boundingBox = anim.CalculateAnimationBoundingBox();
-            boundingBox.Inflate(padding * 2, padding * 2);
-
-
-           // GifWriter gw = new GifWriter(@"C:\users\mjperez\desktop\testout.gif");
-
-            
-            //gw.Dispose();
-
-
-
-            using (MagickImageCollection collection = new MagickImageCollection())
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "Animated GIF|*.gif";
+            if (save.ShowDialog() == true)
             {
-                foreach (BNSA_Unpacker.classes.Frame f in anim.Frames)
+                int padding = 2; //on each side
+                int animationToExport = Convert.ToInt32(animationIndexUpDown.Value);
+                Animation anim = ActiveBNSA.Animations[animationToExport];
+                Rectangle boundingBox = anim.CalculateAnimationBoundingBox();
+                boundingBox.Inflate(padding * 2, padding * 2);
+
+                using (MagickImageCollection collection = new MagickImageCollection())
                 {
-                    int animationDelay = Convert.ToInt32(f.FrameDelay * 1.6667); //1/60 in ms;
-                    MagickImage img = new MagickImage(DrawSprite(f,boundingBox));
-                    collection.Add(img);
-                    collection.Last().AnimationDelay = animationDelay;
+                    foreach (BNSA_Unpacker.classes.Frame f in anim.Frames)
+                    {
+                        int animationDelay = Convert.ToInt32(f.FrameDelay * 1.6667); //1/60 in ms;
+                        MagickImage img = new MagickImage(DrawSprite(f, boundingBox));
+                        collection.Add(img);
+                        collection.Last().AnimationDelay = animationDelay;
+                    }
+
+
+                    // Reduce colors (causes flicker)
+                    QuantizeSettings settings = new QuantizeSettings();
+                    settings.Colors = 16;
+                    collection.Quantize(settings);
+
+                    collection.Coalesce();
+                    // Optionally optimize the images (images should have the same size).
+                    //collection.Optimize(); //causes flicker
+
+                    //doing neither seems to cause both
+                    // Save gif
+                    collection.Write(save.FileName);
                 }
-
-
-                // Reduce colors (causes flicker)
-                QuantizeSettings settings = new QuantizeSettings();
-                settings.Colors = 16;
-                collection.Quantize(settings);
-
-                collection.Coalesce();
-                // Optionally optimize the images (images should have the same size).
-                //collection.Optimize(); //causes flicker
-
-                //doing neither seems to cause both
-                // Save gif
-                collection.Write(@"C:\Users\mjperez\BNSA\output.gif");
             }
+        }
 
+        private void paletteColorChanged(object sender, RoutedPropertyChangedEventArgs<System.Windows.Media.Color?> e)
+        {
+            if (ActiveBNSA != null && !PaletteIsChanging)
+            {
+                ColorPicker pickedColor = (ColorPicker)sender;
+                int colorIndex = colorPickerPaletteButtons[pickedColor];
+                System.Windows.Media.Color color = (System.Windows.Media.Color)pickedColor.SelectedColor;
+                int argbcolor = (color.A << 24) | (color.R << 16) | (color.G << 8) | color.B;
+                ActiveBNSA.WorkingPalettes[(int)paletteIndexUpDown.Value].Colors[colorIndex] = argbcolor;
+                UpdateImage(); //redraw sprite with new palette
+            }
         }
     }
 }

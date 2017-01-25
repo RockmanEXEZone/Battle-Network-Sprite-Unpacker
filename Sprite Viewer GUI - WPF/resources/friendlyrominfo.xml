@@ -7,6 +7,24 @@
     <archive offset="081DCD6C">SearchSoul</archive>
     <archive offset="081E4650">NapalmSoul</archive>
     <archive offset="081ED434">MagnetSoul</archive>
+  </bngame>
+  <bngame meta-friendlyname="Rockman EXE 6/Megaman Battle Network 6" romcode="EXE6">
+    <archive offset="081D8000">MegaMan</archive>
+    
+    <archive offset="081DF420">HeatBeast</archive>
+    <archive offset="081E7CC8">ElecBeast</archive>
+    <archive offset="081F1414">SlashBeast</archive>
+    <archive offset="081FA9E8">EraseBeast</archive>
+    <archive offset="08204108">ChargeBeast</archive>
+    
+    <archive offset="0820CD4C">AquaBeast</archive>
+    <archive offset="08214808">TomhawkBeast</archive>
+    <archive offset="0821C354">TenguBeast</archive>
+    <archive offset="08223C48">GroundBeast</archive>
+    <archive offset="0822CC50">DustBeast</archive>
 
+    <archive offset="08233728">GregarBeast</archive>
+    <archive offset="0823B768">FalzarBeast</archive>
+    <archive offset="084DC040">Empty (WD)</archive>
   </bngame>
 </bnsa_gameoffsets>
