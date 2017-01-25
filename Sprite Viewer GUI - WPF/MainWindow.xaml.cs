@@ -1,4 +1,5 @@
 ﻿using BNSA_Unpacker.classes;
+using ImageMagick;
 using MahApps.Metro.Controls;
 using Microsoft.Win32;
 using Sprite_Viewer_GUI___WPF.classes;
@@ -135,6 +136,9 @@ namespace Sprite_Viewer_GUI___WPF
             spriteAnimatorWorker.DoWork += SpriteAnimatorWork;
             spriteAnimatorWorker.WorkerSupportsCancellation = true;
             spriteAnimatorWorker.RunWorkerAsync();
+
+            //debug
+            OpenBNSA(@"C:\users\mjperez\bnsa\bunny.bnsa");
         }
 
         private void SpriteAnimatorWork(object sender, System.ComponentModel.DoWorkEventArgs e)
@@ -363,6 +367,10 @@ namespace Sprite_Viewer_GUI___WPF
         /// <param name="fileName"></param>
         private void OpenBNSA(string fileName)
         {
+            frameImage.Stretch = Stretch.None;
+            RenderOptions.SetBitmapScalingMode(frameImage, BitmapScalingMode.NearestNeighbor);
+            romSpritePointersListbox.ItemsSource = new List<String>(); //clear
+
             ActiveBNSA = new BNSAFile(fileName);
             ActiveBNSA.ResolveReferences();
             animationIndexUpDown.Maximum = ActiveBNSA.Animations.Count - 1;
@@ -976,6 +984,49 @@ namespace Sprite_Viewer_GUI___WPF
             Rectangle rect = new Rectangle(cropX, cropY, cropWidth, cropHeight);
             Bitmap cropped = bitmap.Clone(rect, bitmap.PixelFormat);
             return cropped;
+        }
+
+        private void ExportAnimationGIFItem_Click(object sender, RoutedEventArgs e)
+        {
+            int padding = 2; //on each side
+            int animationToExport = Convert.ToInt32(animationIndexUpDown.Value);
+            Animation anim = ActiveBNSA.Animations[animationToExport];
+            Rectangle boundingBox = anim.CalculateAnimationBoundingBox();
+            boundingBox.Inflate(padding * 2, padding * 2);
+
+
+           // GifWriter gw = new GifWriter(@"C:\users\mjperez\desktop\testout.gif");
+
+            
+            //gw.Dispose();
+
+
+
+            using (MagickImageCollection collection = new MagickImageCollection())
+            {
+                foreach (BNSA_Unpacker.classes.Frame f in anim.Frames)
+                {
+                    int animationDelay = Convert.ToInt32(f.FrameDelay * 1.6667); //1/60 in ms;
+                    MagickImage img = new MagickImage(DrawSprite(f,boundingBox));
+                    collection.Add(img);
+                    collection.Last().AnimationDelay = animationDelay;
+                }
+
+
+                // Reduce colors (causes flicker)
+                QuantizeSettings settings = new QuantizeSettings();
+                settings.Colors = 16;
+                collection.Quantize(settings);
+
+                collection.Coalesce();
+                // Optionally optimize the images (images should have the same size).
+                //collection.Optimize(); //causes flicker
+
+                //doing neither seems to cause both
+                // Save gif
+                collection.Write(@"C:\Users\mjperez\BNSA\output.gif");
+            }
+
         }
     }
 }
