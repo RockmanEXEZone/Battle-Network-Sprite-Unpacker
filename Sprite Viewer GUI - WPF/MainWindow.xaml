@@ -34,11 +34,13 @@
                 <MenuItem Header="Exit" ToolTip="Close Program"></MenuItem>
             </MenuItem>
             <MenuItem Header="Export">
-                <MenuItem Header="Export BNSA" ToolTip="Exports the current BNSA archive to disk in an uncompressed format"></MenuItem>
-                <MenuItem Header="Export decompiled BNSA" ToolTip="Exports the current BNSA archive as a decompiled project for editing"></MenuItem>
+                <MenuItem x:Name="ExportBNSA" Header="Export BNSA" ToolTip="Exports the current BNSA archive to disk in an uncompressed format"></MenuItem>
+                <MenuItem x:Name="ExportDecompiledBNSA"  Header="Export decompiled BNSA" ToolTip="Exports the current BNSA archive as a decompiled project for editing"></MenuItem>
                 <Separator/>
+                <MenuItem x:Name="ExportAtDrawScaleToggle" IsChecked="True" Header="Export at Draw Scale" IsCheckable="True" ToolTip="Toggles exporting sprites at the draw scale or 1x"/>
                 <MenuItem x:Name="ExportAnimationGIFItem" Header="Export Animation as GIF" ToolTip="Exports the current animation as a cropped GIF that plays at the game speed" Click="ExportAnimationGIFItem_Click"></MenuItem>
-                <MenuItem x:Name="ExportAnimationStripItem" Header="Export Animation as Strip" ToolTip="Exports the current animation as a list of sprites in a single file"></MenuItem>
+                <MenuItem x:Name="ExportAnimationStripItem" Header="Export Animation as Strip" ToolTip="Exports the current animation as a list of sprites in a single file" Click="ExportAnimationStripItem_Click"></MenuItem>
+                <MenuItem x:Name="ExportSpriteSheetItem" Header="Export Sprite Sheet" ToolTip="Exports the entire entire set of animations to images with current palette" Click="ExportSpriteSheetItem_Click"></MenuItem>
                 <MenuItem x:Name ="ExportPNGMenuItem" Header="Export Frame as PNG" ToolTip="Exports the currently displayed frame as a PNG file" Click="ExportPNGMenuItem_Click"></MenuItem>
             </MenuItem>
             <MenuItem Header="Help">

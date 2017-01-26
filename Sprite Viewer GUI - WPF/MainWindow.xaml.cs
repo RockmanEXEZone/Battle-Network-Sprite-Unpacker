@@ -77,7 +77,7 @@ namespace Sprite_Viewer_GUI___WPF
             colorPickerPaletteButtons[paletteColor7Button] = 6;
             colorPickerPaletteButtons[paletteColor8Button] = 7;
             colorPickerPaletteButtons[paletteColor9Button] = 8;
-            colorPickerPaletteButtons[paletteColor10Button] = 9;;
+            colorPickerPaletteButtons[paletteColor10Button] = 9; ;
             colorPickerPaletteButtons[paletteColor11Button] = 10;
             colorPickerPaletteButtons[paletteColor12Button] = 11;
             colorPickerPaletteButtons[paletteColor13Button] = 12;
@@ -1021,7 +1021,6 @@ namespace Sprite_Viewer_GUI___WPF
                         collection.Last().AnimationDelay = animationDelay;
                     }
 
-
                     // Reduce colors (causes flicker)
                     QuantizeSettings settings = new QuantizeSettings();
                     settings.Colors = 16;
@@ -1048,6 +1047,91 @@ namespace Sprite_Viewer_GUI___WPF
                 int argbcolor = (color.A << 24) | (color.R << 16) | (color.G << 8) | color.B;
                 ActiveBNSA.WorkingPalettes[(int)paletteIndexUpDown.Value].Colors[colorIndex] = argbcolor;
                 UpdateImage(); //redraw sprite with new palette
+            }
+        }
+
+        private void ExportAnimationStripItem_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "PNG Image |*.png";
+            if (save.ShowDialog() == true)
+            {
+                int currentDrawScale = (int)drawScaleUpDown.Value;
+                int drawAtScale = currentDrawScale;
+                if (!ExportAtDrawScaleToggle.IsChecked)
+                {
+                    drawScaleUpDown.Value = 1;
+                    drawAtScale = 1;
+                }
+                Animation anim = ActiveBNSA.Animations[(int)animationIndexUpDown.Value];
+                Rectangle boundingBox = anim.BoundingBox.GetValueOrDefault();
+                int width = anim.Frames.Count * boundingBox.Width*drawAtScale;
+                int height = boundingBox.Height * drawAtScale;
+
+                Bitmap picture = new Bitmap(width, height);
+                Graphics g = Graphics.FromImage(picture);
+
+                int i = 0;
+                foreach (BNSA_Unpacker.classes.Frame f in anim.Frames)
+                {
+                    Bitmap bm = DrawSprite(f, boundingBox);
+                    System.Drawing.Point drawPos = new System.Drawing.Point(i * boundingBox.Width * drawAtScale, 0);
+                    g.DrawImageUnscaled(bm, drawPos);
+                    i++;
+                }
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                picture.Save(save.FileName);
+                drawScaleUpDown.Value = currentDrawScale;
+            }
+        }
+
+        private void ExportSpriteSheetItem_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "PNG Image |*.png";
+            if (save.ShowDialog() == true)
+            {
+                int currentDrawScale = (int) drawScaleUpDown.Value;
+                int drawAtScale = currentDrawScale;
+                if (!ExportAtDrawScaleToggle.IsChecked)
+                {
+                    drawScaleUpDown.Value = 1;
+                    drawAtScale = 1;
+                }
+                //Calculate sheet size
+                int fullwidth = 0;
+                int fullheight = 0;                
+                foreach (Animation anim in ActiveBNSA.Animations)
+                {
+                    Rectangle boundingBox = anim.BoundingBox.GetValueOrDefault();
+                    fullwidth = Math.Max(fullwidth, anim.Frames.Count * boundingBox.Width * drawAtScale);
+                    fullheight += boundingBox.Height * drawAtScale;
+                }
+                    
+                Bitmap sheetBitmap = new Bitmap(fullwidth, fullheight);
+                Graphics g = Graphics.FromImage(sheetBitmap);
+                //int num = getint32(spritefile, opointer + subFrameIndex * 4);
+
+                int currentheightoffset = 0;
+                foreach (Animation anim in ActiveBNSA.Animations)
+                {
+                    int i = 0;
+                    Rectangle boundingBox = anim.BoundingBox.GetValueOrDefault();
+                    foreach (BNSA_Unpacker.classes.Frame f in anim.Frames)
+                    {
+                        Bitmap bm = DrawSprite(f, boundingBox);
+                        System.Drawing.Point drawPos = new System.Drawing.Point(i * boundingBox.Width * drawAtScale, currentheightoffset);
+                        g.DrawImageUnscaled(bm, drawPos);
+                        i++;
+                    }
+                    currentheightoffset += boundingBox.Height * drawAtScale;
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+                
+                sheetBitmap.Save(save.FileName);
+                drawScaleUpDown.Value = currentDrawScale;
             }
         }
     }
