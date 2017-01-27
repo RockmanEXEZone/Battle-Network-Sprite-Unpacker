@@ -335,7 +335,6 @@ namespace BNSA_Unpacker.classes
                 clone.GenerateColorsFromPalette();
                 WorkingPalettes.Add(clone);
             }
-
         }
 
         /// <summary>

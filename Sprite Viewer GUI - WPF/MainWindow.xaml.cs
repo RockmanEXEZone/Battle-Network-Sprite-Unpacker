@@ -379,7 +379,7 @@ namespace Sprite_Viewer_GUI___WPF
             romSpritePointersListbox.ItemsSource = new List<String>(); //clear
 
             LoadBNSA(File.ReadAllBytes(fileName));
-            ActiveBNSA = new BNSAFile(fileName);
+            //ActiveBNSA = new BNSAFile(fileName);
             StatusLabel.Content = "Viewing " + Path.GetFileName(fileName);
         }
 
