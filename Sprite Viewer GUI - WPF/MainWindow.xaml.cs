@@ -1017,20 +1017,17 @@ namespace Sprite_Viewer_GUI___WPF
                     {
                         int animationDelay = Convert.ToInt32(f.FrameDelay * 1.6667); //1/60 in ms;
                         MagickImage img = new MagickImage(DrawSprite(f, boundingBox));
+                        img.AnimationDelay = animationDelay;
+                        img.GifDisposeMethod = GifDisposeMethod.Background;
                         collection.Add(img);
-                        collection.Last().AnimationDelay = animationDelay;
                     }
 
-                    // Reduce colors (causes flicker)
                     QuantizeSettings settings = new QuantizeSettings();
                     settings.Colors = 16;
                     collection.Quantize(settings);
 
-                    collection.Coalesce();
-                    // Optionally optimize the images (images should have the same size).
-                    //collection.Optimize(); //causes flicker
+                    collection.Optimize();
 
-                    //doing neither seems to cause both
                     // Save gif
                     collection.Write(save.FileName);
                 }
