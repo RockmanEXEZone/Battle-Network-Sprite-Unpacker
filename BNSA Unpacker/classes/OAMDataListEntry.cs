@@ -25,7 +25,7 @@ namespace BNSA_Unpacker.classes
         /// <param name="stream">Stream to construct a OAM Data Entry from</param>
         public OAMDataListEntry(Stream stream)
         {
-            Console.Write("------Reading OAM Data List Entry at 0x" + stream.Position.ToString("X2"));
+           // Console.Write("------Reading OAM Data List Entry at 0x" + stream.Position.ToString("X2"));
             Pointer = stream.Position;
 
             TileNumber = (byte)stream.ReadByte();
